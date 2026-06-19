@@ -1,6 +1,8 @@
 package com.enhancedechest;
 
+import com.enhancedechest.config.ConfigMigrations;
 import com.enhancedechest.config.PluginConfig;
+import com.enhancedechest.config.YamlMigrator;
 import com.enhancedechest.gui.EnderChestService;
 import com.enhancedechest.lang.LanguageManager;
 import com.enhancedechest.listener.EnderChestGuiListener;
@@ -17,6 +19,8 @@ import lombok.Getter;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.slf4j.Logger;
 
+import java.io.File;
+
 @Getter
 public final class EnhancedEChestPlugin extends JavaPlugin {
 
@@ -31,6 +35,8 @@ public final class EnhancedEChestPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        migrateConfigFile();
+        reloadConfig();
 
         pluginConfig    = new PluginConfig(getConfig());
         codec           = new ContainerCodec();
@@ -70,10 +76,20 @@ public final class EnhancedEChestPlugin extends JavaPlugin {
     }
 
     public void reload() {
+        migrateConfigFile();
         reloadConfig();
         pluginConfig.reload(getConfig());
         languageManager.reload(pluginConfig.getLocale());
         getSLF4JLogger().info("Configuration reloaded.");
+    }
+
+    private void migrateConfigFile() {
+        YamlMigrator.migrate(
+                new File(getDataFolder(), "config.yml"),
+                getResource("config.yml"),
+                ConfigMigrations.CONFIG,
+                getSLF4JLogger()
+        );
     }
 
     private void printStartupBanner(Logger log) {

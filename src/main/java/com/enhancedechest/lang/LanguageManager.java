@@ -1,5 +1,7 @@
 package com.enhancedechest.lang;
 
+import com.enhancedechest.config.ConfigMigrations;
+import com.enhancedechest.config.YamlMigrator;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -49,6 +51,10 @@ public final class LanguageManager {
         }
         saveDefault(base + "messages.yml");
         saveDefault(base + "gui.yml");
+
+        migrateLanguageFile(base + "messages.yml", ConfigMigrations.MESSAGES);
+        migrateLanguageFile(base + "gui.yml",      ConfigMigrations.GUI);
+
         messages = loadFile(base + "messages.yml");
         gui      = loadFile(base + "gui.yml");
 
@@ -61,6 +67,15 @@ public final class LanguageManager {
         if (!file.exists()) {
             plugin.saveResource(path, false);
         }
+    }
+
+    private void migrateLanguageFile(String relativePath, java.util.List<YamlMigrator.Rename> renames) {
+        YamlMigrator.migrate(
+                new File(plugin.getDataFolder(), relativePath),
+                plugin.getResource(relativePath),
+                renames,
+                plugin.getSLF4JLogger()
+        );
     }
 
     private FileConfiguration loadFile(String relativePath) {
