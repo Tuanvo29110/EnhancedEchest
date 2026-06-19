@@ -2,6 +2,7 @@ package com.enhancedechest;
 
 import com.enhancedechest.config.PluginConfig;
 import com.enhancedechest.gui.EnderChestService;
+import com.enhancedechest.lang.LanguageManager;
 import com.enhancedechest.listener.EnderChestGuiListener;
 import com.enhancedechest.listener.JoinMigrationListener;
 import com.enhancedechest.listener.PlayerQuitListener;
@@ -12,11 +13,13 @@ import com.enhancedechest.storage.EnderChestStorage;
 import com.enhancedechest.storage.StorageFactory;
 import lombok.Getter;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.slf4j.Logger;
 
 @Getter
 public final class EnhancedEChestPlugin extends JavaPlugin {
 
     private PluginConfig pluginConfig;
+    private LanguageManager languageManager;
     private ContainerCodec codec;
     private EnderChestStorage storage;
     private EnderChestService enderChestService;
@@ -26,9 +29,9 @@ public final class EnhancedEChestPlugin extends JavaPlugin {
     public void onEnable() {
         saveDefaultConfig();
 
-        pluginConfig = new PluginConfig(getConfig());
-        codec        = new ContainerCodec();
-        storage      = StorageFactory.create(pluginConfig, getDataFolder().toPath());
+        pluginConfig    = new PluginConfig(getConfig());
+        codec           = new ContainerCodec();
+        storage         = StorageFactory.create(pluginConfig, getDataFolder().toPath());
 
         try {
             storage.init();
@@ -38,18 +41,17 @@ public final class EnhancedEChestPlugin extends JavaPlugin {
             return;
         }
 
-        enderChestService = new EnderChestService(pluginConfig, codec, storage, getSLF4JLogger());
+        languageManager   = new LanguageManager(this, pluginConfig.getLocale());
+        enderChestService = new EnderChestService(languageManager, codec, storage, getSLF4JLogger());
         migrationService  = new MigrationService(storage, codec, getSLF4JLogger());
 
         var pm = getServer().getPluginManager();
-        pm.registerEvents(new VanillaEnderChestListener(enderChestService), this);
+        pm.registerEvents(new VanillaEnderChestListener(enderChestService, languageManager), this);
         pm.registerEvents(new EnderChestGuiListener(enderChestService), this);
         pm.registerEvents(new PlayerQuitListener(enderChestService), this);
         pm.registerEvents(new JoinMigrationListener(pluginConfig, migrationService), this);
 
-        getSLF4JLogger().info("EnhancedEChest enabled (storage: {}, migration: {})",
-                pluginConfig.getDatabaseType(),
-                pluginConfig.isMigrationEnabled() ? "ON" : "OFF");
+        printStartupBanner(getSLF4JLogger());
     }
 
     @Override
@@ -57,12 +59,30 @@ public final class EnhancedEChestPlugin extends JavaPlugin {
         if (storage != null) {
             storage.close();
         }
-        getSLF4JLogger().info("EnhancedEChest disabled");
+        getSLF4JLogger().info("EnhancedEChest disabled.");
     }
 
     public void reload() {
         reloadConfig();
         pluginConfig.reload(getConfig());
-        getSLF4JLogger().info("Configuration reloaded");
+        languageManager.reload(pluginConfig.getLocale());
+        getSLF4JLogger().info("Configuration reloaded.");
+    }
+
+    private void printStartupBanner(Logger log) {
+        String version   = getPluginMeta().getVersion();
+        String storage   = pluginConfig.getDatabaseType().toUpperCase();
+        String locale    = pluginConfig.getLocale();
+        String migration = pluginConfig.isMigrationEnabled() ? "ON" : "OFF";
+        String sep       = "——————————————[ EnhancedEChest ]——————————————";
+
+        log.info("> {}", sep);
+        log.info(">");
+        log.info(">   Version   : {}", version);
+        log.info(">   Storage   : {}", storage);
+        log.info(">   Language  : {}", locale);
+        log.info(">   Migration : {}", migration);
+        log.info(">");
+        log.info("> {}", sep);
     }
 }

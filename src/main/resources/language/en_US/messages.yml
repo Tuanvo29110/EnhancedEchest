@@ -1,0 +1,19 @@
+prefix: '<#9B59B6>EɴʜᴀɴᴄᴇᴅECʜᴇsᴛ <dark_gray>» <reset>'
+
+command:
+  not-player: '{prefix}<red>Only players can use the ender chest.'
+
+chest:
+  no-permission: '{prefix}<red>You do not have permission to use the ender chest.'
+  load-failed: '{prefix}<red>Could not load your ender chest. Please contact an admin.'
+  codec-failed: '{prefix}<red>Your ender chest data could not be read. Please contact an admin.'
+
+migrate:
+  no-players: '{prefix}<yellow>No players are online.'
+  complete: '{prefix}<gray>Migration complete: <green>{migrated} migrated<gray>, <yellow>{skipped} already done.'
+  player-offline: '{prefix}<yellow>{player} <gray>is not online.'
+  success: '{prefix}<green>Migrated <yellow>{player}<green> successfully.'
+  already-done: '{prefix}<yellow>{player} <gray>was already migrated.'
+
+admin:
+  reload-success: '{prefix}<green>Configuration reloaded.'

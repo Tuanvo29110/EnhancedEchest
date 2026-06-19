@@ -2,7 +2,6 @@ package com.enhancedechest;
 
 import com.enhancedechest.command.EnderChestOpenCommand;
 import com.enhancedechest.command.admin.MigrateRunCommand;
-import com.enhancedechest.command.admin.MigrateToggleCommand;
 import com.enhancedechest.command.admin.ReloadCommand;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import io.papermc.paper.command.brigadier.Commands;
@@ -42,12 +41,6 @@ public final class EnhancedEChestBootstrap implements PluginBootstrap {
                 Commands.literal("enhancedechest")
                         .requires(src -> src.getSender().isOp())
                         .then(Commands.literal("migrate")
-                                .then(Commands.literal("on")
-                                        .requires(src -> src.getSender().hasPermission("ee.admin.migrate.toggle"))
-                                        .executes(ctx -> MigrateToggleCommand.execute(ctx.getSource(), true)))
-                                .then(Commands.literal("off")
-                                        .requires(src -> src.getSender().hasPermission("ee.admin.migrate.toggle"))
-                                        .executes(ctx -> MigrateToggleCommand.execute(ctx.getSource(), false)))
                                 .then(Commands.literal("run")
                                         .requires(src -> src.getSender().hasPermission("ee.admin.migrate.run"))
                                         .then(Commands.literal("all")

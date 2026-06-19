@@ -30,10 +30,18 @@ jobs:
           chmod +x gradlew
           ./gradlew shadowJar --no-daemon
 
+      - name: Get version and commit info
+        id: meta
+        run: |
+          VERSION=$(./gradlew properties -q --no-daemon | grep "^version:" | awk '{print $2}')
+          SHORT_SHA="${GITHUB_SHA::7}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: EnhancedEChest-${{ github.run_number }}
+          name: EnhancedEChest-${{ steps.meta.outputs.version }}-${{ steps.meta.outputs.short_sha }}
           path: build/libs/EnhancedEChest-*.jar
           if-no-files-found: error
           retention-days: 30

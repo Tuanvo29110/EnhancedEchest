@@ -7,8 +7,8 @@ import org.bukkit.configuration.file.FileConfiguration;
 @Getter
 public final class PluginConfig {
 
-    // GUI
-    private String guiTitle;
+    // Language
+    private String locale;
 
     // Database — common
     private String databaseType;
@@ -16,7 +16,7 @@ public final class PluginConfig {
     // SQLite
     private String sqliteFile;
 
-    // MySQL / MariaDB (Phase 4)
+    // MySQL / MariaDB
     private String dbHost;
     private int dbPort;
     private String dbName;
@@ -33,7 +33,7 @@ public final class PluginConfig {
     }
 
     public void reload(FileConfiguration config) {
-        guiTitle = config.getString("gui.title", "Ender Chest");
+        locale = config.getString("language", "en_US");
 
         databaseType = config.getString("database.type", "sqlite");
         sqliteFile   = config.getString("database.sqlite-file", "enderchests.db");

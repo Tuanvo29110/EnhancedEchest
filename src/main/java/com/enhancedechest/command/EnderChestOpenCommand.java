@@ -11,19 +11,15 @@ public final class EnderChestOpenCommand {
 
     private EnderChestOpenCommand() {}
 
-    /**
-     * Executor for /ec and /enderchest. Looks up the plugin at execution time
-     * (safe — the plugin is fully loaded when commands can be run).
-     */
     public static int execute(CommandSourceStack source) {
-        if (!(source.getSender() instanceof Player player)) {
-            source.getSender().sendMessage(Component.text("[EnhancedEChest] Only players can open the enderchest."));
+        EnhancedEChestPlugin plugin = (EnhancedEChestPlugin) Bukkit.getPluginManager().getPlugin("EnhancedEChest");
+        if (plugin == null || !plugin.isEnabled()) {
+            source.getSender().sendMessage(Component.text("[EnhancedEChest] Plugin is not available."));
             return 0;
         }
 
-        EnhancedEChestPlugin plugin = (EnhancedEChestPlugin) Bukkit.getPluginManager().getPlugin("EnhancedEChest");
-        if (plugin == null || !plugin.isEnabled()) {
-            player.sendMessage(Component.text("[EnhancedEChest] Plugin is not available."));
+        if (!(source.getSender() instanceof Player player)) {
+            source.getSender().sendMessage(plugin.getLanguageManager().get("command.not-player"));
             return 0;
         }
 

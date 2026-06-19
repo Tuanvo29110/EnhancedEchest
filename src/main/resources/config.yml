@@ -1,8 +1,7 @@
 # EnhancedEChest configuration
 
-gui:
-  # Title shown in the custom enderchest GUI (supports color codes via MiniMessage in future)
-  title: "Ender Chest"
+# Language locale to load from language/<locale>/
+language: en_US
 
 database:
   # Storage backend: sqlite | mysql | postgres

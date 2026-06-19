@@ -1,12 +1,11 @@
 package com.enhancedechest.gui;
 
-import com.enhancedechest.config.PluginConfig;
+import com.enhancedechest.lang.LanguageManager;
 import com.enhancedechest.model.EnderChestData;
 import com.enhancedechest.serialization.CodecException;
 import com.enhancedechest.serialization.ContainerCodec;
 import com.enhancedechest.storage.EnderChestStorage;
 import lombok.RequiredArgsConstructor;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -25,21 +24,12 @@ import org.slf4j.Logger;
 @RequiredArgsConstructor
 public final class EnderChestService {
 
-    private final PluginConfig config;
+    private final LanguageManager lang;
     private final ContainerCodec codec;
     private final EnderChestStorage storage;
     private final Logger logger;
 
-    /**
-     * Opens the custom enderchest for the player.
-     * If the player already has the custom GUI open, it is closed first (save fires) so that
-     * the subsequent DB load picks up the player's latest edits.
-     */
     public void open(Player player) {
-        // If the player's current top inventory is our GUI, close it before loading.
-        // player.closeInventory() fires InventoryCloseEvent synchronously, which triggers
-        // EnderChestGuiListener.onClose(), which calls save(). The load below then reads
-        // the just-written data — no stale state, no dupe window.
         Inventory currentTop = player.getOpenInventory().getTopInventory();
         if (currentTop.getHolder() instanceof EnderChestHolder) {
             player.closeInventory();
@@ -50,25 +40,22 @@ public final class EnderChestService {
             data = storage.load(player.getUniqueId());
         } catch (Exception e) {
             logger.error("Failed to load enderchest for {} — aborting open", player.getName(), e);
-            player.sendMessage(Component.text("[EnhancedEChest] Could not load your enderchest. Please contact an admin."));
+            player.sendMessage(lang.get("chest.load-failed"));
             return;
         }
 
         Inventory inv = Bukkit.createInventory(
                 new EnderChestHolder(player.getUniqueId()),
                 ContainerCodec.CHEST_SIZE,
-                Component.text(config.getGuiTitle())
+                lang.getGuiTitle()
         );
 
         if (data != null && data.containerData() != null && data.containerData().length > 0) {
             try {
                 inv.setContents(codec.decode(data.containerData()));
             } catch (CodecException e) {
-                // Data present but unreadable — abort rather than showing an empty chest.
-                // Opening an empty chest would overwrite good data on close.
                 logger.error("Codec failure for {} — aborting open to protect stored data", player.getName(), e);
-                player.sendMessage(Component.text(
-                        "[EnhancedEChest] Your enderchest data could not be read. Please contact an admin."));
+                player.sendMessage(lang.get("chest.codec-failed"));
                 return;
             }
         }
@@ -76,10 +63,6 @@ public final class EnderChestService {
         player.openInventory(inv);
     }
 
-    /**
-     * Saves the current inventory contents to DB immediately.
-     * Called by listeners on InventoryCloseEvent and PlayerQuitEvent.
-     */
     public void save(EnderChestHolder holder, Inventory inventory) {
         byte[] encoded;
         try {
