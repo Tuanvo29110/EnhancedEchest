@@ -13,12 +13,18 @@ import io.papermc.paper.plugin.bootstrap.BootstrapContext;
 import io.papermc.paper.plugin.bootstrap.PluginBootstrap;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
 @SuppressWarnings("UnstableApiUsage")
 public final class EnhancedEChestBootstrap implements PluginBootstrap {
+
+    /** Base permission gating every {@code /ec} command; without it the command is hidden. */
+    private static final String EC_BASE_PERMISSION = "ec.use";
+    /** Base permission gating every {@code /ee} command; without it the command is hidden. */
+    private static final String EE_BASE_PERMISSION = "ee.admin";
 
     /** Suggests names of currently online players for the <player> argument. */
     private static final SuggestionProvider<CommandSourceStack> ONLINE_PLAYERS = (ctx, builder) -> {
@@ -28,6 +34,34 @@ public final class EnhancedEChestBootstrap implements PluginBootstrap {
                 .filter(name -> name.toLowerCase().startsWith(prefix))
                 .forEach(builder::suggest);
         return builder.buildFuture();
+    };
+
+    /** Suggests the sender's own chests as {@code #index} and custom-name completions for /ec. */
+    private static final SuggestionProvider<CommandSourceStack> OWN_CHESTS = (ctx, builder) -> {
+        if (!(ctx.getSource().getSender() instanceof Player player)) {
+            return builder.buildFuture();
+        }
+        EnhancedEChestPlugin plugin =
+                (EnhancedEChestPlugin) Bukkit.getPluginManager().getPlugin("EnhancedEChest");
+        if (plugin == null || !plugin.isEnabled()) {
+            return builder.buildFuture();
+        }
+        String prefix = builder.getRemaining().toLowerCase();
+        return plugin.getEnderChestService().listChestsAsync(player.getUniqueId())
+                .thenApply(chests -> {
+                    for (var chest : chests) {
+                        String idx = "#" + chest.index();
+                        if (idx.toLowerCase().startsWith(prefix)) {
+                            builder.suggest(idx);
+                        }
+                        String name = chest.customName();
+                        if (name != null && !name.isBlank()
+                                && name.toLowerCase().startsWith(prefix)) {
+                            builder.suggest(name);
+                        }
+                    }
+                    return builder.build();
+                });
     };
 
     @Override
@@ -42,20 +76,35 @@ public final class EnhancedEChestBootstrap implements PluginBootstrap {
     private void registerPlayerCommands(Commands commands) {
         commands.register(
                 Commands.literal("ec")
-                        .requires(src -> src.getSender().hasPermission("ee.use"))
+                        .requires(src -> src.getSender().hasPermission(EC_BASE_PERMISSION))
                         .executes(ctx -> EnderChestOpenCommand.execute(ctx.getSource()))
                         .then(Commands.literal("list")
                                 .executes(ctx -> EnderChestOpenCommand.executeList(ctx.getSource())))
+                        // /ec <#index | name> — open a specific chest by index or custom name
+                        .then(Commands.argument("chest", StringArgumentType.greedyString())
+                                .suggests(OWN_CHESTS)
+                                .executes(ctx -> EnderChestOpenCommand.executeOpenTarget(
+                                        ctx.getSource(),
+                                        StringArgumentType.getString(ctx, "chest"))))
                         .build(),
                 "Open your enhanced enderchest",
                 List.of("enderchest")
+        );
+
+        // /eclist — standalone alias for /ec list
+        commands.register(
+                Commands.literal("eclist")
+                        .requires(src -> src.getSender().hasPermission(EC_BASE_PERMISSION))
+                        .executes(ctx -> EnderChestOpenCommand.executeList(ctx.getSource()))
+                        .build(),
+                "Open your enhanced enderchest management menu"
         );
     }
 
     private void registerAdminCommands(Commands commands) {
         commands.register(
                 Commands.literal("enhancedechest")
-                        .requires(src -> src.getSender().isOp() || src.getSender().hasPermission("ee.admin"))
+                        .requires(src -> src.getSender().hasPermission(EE_BASE_PERMISSION))
                         .then(Commands.literal("migrate")
                                 .then(Commands.literal("run")
                                         .requires(src -> src.getSender().hasPermission("ee.admin.migrate.run"))

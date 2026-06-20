@@ -7,8 +7,8 @@ author: Nighter
 description: Gives every player a double-size ender chest backed by a persistent database
 
 permissions:
-  ee.use:
-    description: Allows opening the custom enderchest via block or command
+  ec.use:
+    description: Base permission for all /ec player commands (open, list, open by index/name)
     default: op
   ee.admin.migrate.run:
     description: Run migration for a specific player or all players
@@ -16,3 +16,9 @@ permissions:
   ee.admin.reload:
     description: Reload the plugin configuration
     default: op
+  ee.admin:
+    description: Base permission for all /ee admin commands
+    default: op
+    children:
+      ee.admin.migrate.run: true
+      ee.admin.reload: true

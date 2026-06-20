@@ -43,4 +43,21 @@ public final class EnderChestOpenCommand {
         plugin.getEnderChestService().openListDialog(player);
         return Command.SINGLE_SUCCESS;
     }
+
+    /** /ec &lt;#index | name&gt; — opens a specific chest by index or custom name. */
+    public static int executeOpenTarget(CommandSourceStack source, String target) {
+        EnhancedEChestPlugin plugin = (EnhancedEChestPlugin) Bukkit.getPluginManager().getPlugin("EnhancedEChest");
+        if (plugin == null || !plugin.isEnabled()) {
+            source.getSender().sendMessage(Component.text("[EnhancedEChest] Plugin is not available."));
+            return 0;
+        }
+
+        if (!(source.getSender() instanceof Player player)) {
+            source.getSender().sendMessage(plugin.getLanguageManager().get("command.not-player"));
+            return 0;
+        }
+
+        plugin.getEnderChestService().openByQuery(player, target);
+        return Command.SINGLE_SUCCESS;
+    }
 }

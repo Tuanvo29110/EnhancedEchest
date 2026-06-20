@@ -96,6 +96,50 @@ public final class EnderChestService {
         });
     }
 
+    /**
+     * Opens a chest selected by a free-text query from {@code /ec <chest>}:
+     * <ul>
+     *   <li>{@code #N} (or a bare positive integer) opens the chest with that index;</li>
+     *   <li>anything else is matched case-insensitively against players' custom chest names.</li>
+     * </ul>
+     * A miss reports {@code chest.unknown} rather than silently opening the primary chest.
+     */
+    public void openByQuery(Player player, String query) {
+        String trimmed = query.trim();
+        Integer index = parseIndexQuery(trimmed);
+        if (index != null) {
+            openChest(player, index, null);
+            return;
+        }
+        UUID uuid = player.getUniqueId();
+        listChestsAsync(uuid).thenAccept(chests ->
+                foliaLib.getScheduler().runAtEntity(player, task -> {
+                    if (!player.isOnline()) return;
+                    chests.stream()
+                            .filter(c -> c.customName() != null
+                                    && c.customName().equalsIgnoreCase(trimmed))
+                            .findFirst()
+                            .ifPresentOrElse(
+                                    c -> openChest(player, c.index(), null),
+                                    () -> player.sendMessage(lang.get("chest.unknown", "query", trimmed)));
+                })
+        ).exceptionally(e -> reportOpenFailure(player, e));
+    }
+
+    /** Parses a {@code #N} or bare-integer index query; returns null for non-index input. */
+    private static Integer parseIndexQuery(String query) {
+        String digits = query.startsWith("#") ? query.substring(1) : query;
+        if (digits.isEmpty() || !digits.chars().allMatch(Character::isDigit)) {
+            return null;
+        }
+        try {
+            int value = Integer.parseInt(digits);
+            return value > 0 ? value : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     /** Opens a specific chest by index (from the management dialog). */
     public void openChest(Player player, int index, @Nullable Location sourceBlock) {
         UUID uuid = player.getUniqueId();

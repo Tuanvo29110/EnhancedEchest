@@ -9,24 +9,33 @@ EnhancedEChest has two command roots: one for players and one for admins. Click 
 </div>
 
 ::: tip
-`/enderchest` is an alias for `/ec`, and `/ee` is an alias for `/enhancedechest`. See the [Permissions](/docs/permissions) page for the full list of nodes.
+`/enderchest` is an alias for `/ec`, and `/ee` is an alias for `/enhancedechest`. `/eclist` is a shortcut for `/ec list`. Each root has its own base permission (`ec.use` for `/ec`, `ee.admin` for `/ee`) — without it the command is hidden. See the [Permissions](/docs/permissions) page for the full list of nodes.
 :::
 
 ## Player Commands
 
 <div class="command-section">
 
-<CommandRow commands="/ec" aliases="/enderchest" permission="ee.use">
+<CommandRow commands="/ec" aliases="/enderchest" permission="ec.use">
 Open your <strong>main</strong> ender chest. This is the same chest opened by right-clicking an ender chest block. If you don't have a chest yet, one is created automatically using the configured default size.
 </CommandRow>
 
-<CommandRow commands="/ec list" permission="ee.use">
+<CommandRow :commands="['/ec list', '/eclist']" permission="ec.use">
 Open the chest management menu — a dialog listing every ender chest you own. From here you can:
 <ul>
 <li><strong>Open</strong> any chest</li>
 <li><strong>Rename</strong> a chest to give it a custom title</li>
 <li><strong>Set as main</strong> to choose which chest <code>/ec</code> and the ender chest block open</li>
 </ul>
+</CommandRow>
+
+<CommandRow :commands="['/ec #&lt;index&gt;', '/ec &lt;name&gt;']" permission="ec.use">
+Open a specific chest directly, without going through the menu:
+<ul>
+<li><code>/ec #&lt;index&gt;</code>: Open the chest with that number, e.g. <code>/ec #2</code> (a bare number like <code>/ec 2</code> also works).</li>
+<li><code>/ec &lt;name&gt;</code>: Open the chest whose custom name matches (case-insensitive), e.g. <code>/ec Tools</code>.</li>
+</ul>
+Index and name completions for your own chests are suggested as you type. If nothing matches, you're told the chest doesn't exist.
 </CommandRow>
 
 </div>

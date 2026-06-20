@@ -29,7 +29,7 @@ public final class VanillaEnderChestListener implements Listener {
         event.setCancelled(true);
 
         Player player = event.getPlayer();
-        if (!player.hasPermission("ee.use")) {
+        if (!player.hasPermission("ec.use")) {
             player.sendMessage(lang.get("chest.no-permission"));
             return;
         }

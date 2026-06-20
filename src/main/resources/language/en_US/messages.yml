@@ -29,6 +29,7 @@ chest:
   load-failed: '{prefix}&#FF4444Could not load your ender chest. Please contact an admin.'
   codec-failed: '{prefix}&#FF4444Your ender chest data could not be read. Please contact an admin.'
   not-found: '{prefix}&#FF4444That ender chest no longer exists.'
+  unknown: '{prefix}&#FF4444No ender chest matches &e{query}&#FF4444.'
   none: '{prefix}&#F0C857You do not have any ender chests yet.'
 
 # ──────────────────────────────────────────────────────
