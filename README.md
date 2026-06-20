@@ -38,7 +38,7 @@ A Paper plugin that gives every player larger, multi-chest ender storage backed 
 2. Drop it into your server's `plugins/` folder.
 3. Restart the server. It runs on SQLite out of the box.
 
-Grant `ec.use` to your players so they can open their ender chest, then run `/ec`.
+Players can open their ender chest by right-clicking an ender chest block straight away — no permission needed. To let them open it by command (`/enderchest`, `/eclist`), grant `enhancedechest.command.open`.
 
 Full setup, commands, permissions, database, and migration guides are in the **[documentation](https://openvdra.github.io/EnhancedEChest/)**.
 

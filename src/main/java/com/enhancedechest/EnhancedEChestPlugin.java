@@ -59,7 +59,7 @@ public final class EnhancedEChestPlugin extends JavaPlugin {
         migrationService  = new MigrationService(storage, codec, getSLF4JLogger());
 
         var pm = getServer().getPluginManager();
-        pm.registerEvents(new VanillaEnderChestListener(enderChestService, languageManager), this);
+        pm.registerEvents(new VanillaEnderChestListener(enderChestService), this);
         pm.registerEvents(new EnderChestGuiListener(enderChestService, foliaLib), this);
         pm.registerEvents(new PlayerQuitListener(enderChestService, foliaLib), this);
         pm.registerEvents(new JoinMigrationListener(pluginConfig, migrationService), this);

@@ -1,9 +1,13 @@
 # Permissions
 
-EnhancedEChest uses a small, layered permission system with two **separate base permissions** — one per command root. A command (and its subcommands) only appears and runs for players who hold its base node:
+EnhancedEChest uses a small, layered permission system. Every node lives under the `enhancedechest.` namespace. A command (and its subcommands) only appears and runs for players who hold its base node:
 
-- `ec.use` — base permission for every `/ec` player command.
-- `ee.admin` — base permission for every `/ee` admin command.
+- `enhancedechest.command.open` — open the ender chest GUI **by command** (`/enderchest`, `/ec`, `/eclist`).
+- `enhancedechest.admin` — base permission for every `/enhancedechest` (`/ee`) admin command.
+
+::: info Right-clicking the block needs no permission
+Opening the GUI by right-clicking an ender chest **block** is available to everyone and requires no permission. The `enhancedechest.command.open` node only controls the `/enderchest` and `/eclist` commands.
+:::
 
 Click any permission node to copy it to your clipboard.
 
@@ -15,16 +19,16 @@ Click any permission node to copy it to your clipboard.
 | `true` | All players have this permission by default |
 | `false` | No players have this permission by default; must be explicitly granted |
 
-::: tip Letting everyone use ender chests
-By default `ec.use` is operator-only. To let all players use their enhanced ender chest, grant `ec.use` to everyone through your permissions plugin (for example, set it to `true` for the default group).
+::: tip Letting everyone open the GUI by command
+By default `enhancedechest.command.open` is operator-only. To let all players open their ender chest with `/enderchest` and `/eclist`, grant `enhancedechest.command.open` to everyone through your permissions plugin (for example, set it to `true` for the default group). Note that the ender chest **block** already works for everyone regardless of this node.
 :::
 
 ## Player Permissions
 
 <BaseTable :columns="['Permission', 'Description', 'Default']" grid="2fr 3fr 0.6fr">
 
-<PermRow permission="ec.use" defaultVal="op">
-Base permission for all <code>/ec</code> commands. Allows opening the enhanced ender chest by right-clicking an ender chest block or with <code>/ec</code>, <code>/ec list</code> (and <code>/eclist</code>), and <code>/ec #&lt;index&gt;</code> / <code>/ec &lt;name&gt;</code>. Without it, the <code>/ec</code> commands are hidden.
+<PermRow permission="enhancedechest.command.open" defaultVal="op">
+Open the ender chest GUI <strong>by command</strong>: <code>/enderchest</code> (alias <code>/ec</code>), <code>/eclist</code>, and the direct forms <code>/enderchest #&lt;index&gt;</code> / <code>/enderchest &lt;name&gt;</code>. Without it, these commands are hidden. Right-clicking an ender chest block does <strong>not</strong> require this permission.
 </PermRow>
 
 </BaseTable>
@@ -33,15 +37,15 @@ Base permission for all <code>/ec</code> commands. Allows opening the enhanced e
 
 <BaseTable :columns="['Permission', 'Description', 'Default']" grid="2fr 3fr 0.6fr">
 
-<PermRow permission="ee.admin" defaultVal="op">
-Base permission for all <code>/ee</code> commands, including <code>/ee add</code>, <code>/ee resize</code>, and <code>/ee delete</code>. Includes <code>ee.admin.reload</code> and <code>ee.admin.migrate.run</code> as children. Without it, the <code>/ee</code> command is hidden.
+<PermRow permission="enhancedechest.admin" defaultVal="op">
+Base permission for all <code>/enhancedechest</code> (<code>/ee</code>) commands, including <code>/ee add</code>, <code>/ee resize</code>, and <code>/ee delete</code>. Includes <code>enhancedechest.admin.reload</code> and <code>enhancedechest.admin.migrate.run</code> as children. Without it, the <code>/enhancedechest</code> command is hidden.
 </PermRow>
 
-<PermRow permission="ee.admin.reload" defaultVal="op">
+<PermRow permission="enhancedechest.admin.reload" defaultVal="op">
 Allows reloading the configuration with <code>/ee reload</code>.
 </PermRow>
 
-<PermRow permission="ee.admin.migrate.run" defaultVal="op">
+<PermRow permission="enhancedechest.admin.migrate.run" defaultVal="op">
 Allows running migration for a player or all online players with <code>/ee migrate run</code>.
 </PermRow>
 

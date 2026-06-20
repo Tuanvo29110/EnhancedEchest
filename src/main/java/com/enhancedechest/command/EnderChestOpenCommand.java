@@ -27,7 +27,7 @@ public final class EnderChestOpenCommand {
         return Command.SINGLE_SUCCESS;
     }
 
-    /** /ec list — opens the management dialog listing all of the player's chests. */
+    /** /eclist — opens the management dialog listing all of the player's chests. */
     public static int executeList(CommandSourceStack source) {
         EnhancedEChestPlugin plugin = (EnhancedEChestPlugin) Bukkit.getPluginManager().getPlugin("EnhancedEChest");
         if (plugin == null || !plugin.isEnabled()) {

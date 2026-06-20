@@ -25,7 +25,6 @@ command:
 #                 Ender Chest
 # ──────────────────────────────────────────────────────
 chest:
-  no-permission: '{prefix}&#FF4444You do not have permission to use the ender chest.'
   load-failed: '{prefix}&#FF4444Could not load your ender chest. Please contact an admin.'
   codec-failed: '{prefix}&#FF4444Your ender chest data could not be read. Please contact an admin.'
   not-found: '{prefix}&#FF4444That ender chest no longer exists.'

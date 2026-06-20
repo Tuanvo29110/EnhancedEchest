@@ -13,7 +13,7 @@ The active locale is set by the `language` option in [`config.yml`](/docs/config
 | File | Contents |
 |------|----------|
 | `messages.yml` | The plugin prefix and all chat messages (commands, errors, admin feedback, update notices) |
-| `gui.yml` | Inventory titles and the labels used in the `/ec list` management menu |
+| `gui.yml` | Inventory titles and the labels used in the `/eclist` management menu |
 
 ## Formatting
 
@@ -54,9 +54,9 @@ enderchest:
 
 - Chest **#1** shows the un-numbered `title` ("Ender Chest")
 - Chests **#2 and up** show `title-numbered` with their index
-- A chest with a **custom name** (set via `/ec list` → Rename) shows that name instead
+- A chest with a **custom name** (set via `/eclist` → Rename) shows that name instead
 
-The `dialog:` section of `gui.yml` holds the button and label text for the `/ec list` menu — `open`, `rename`, `set-main`, `back`, and so on.
+The `dialog:` section of `gui.yml` holds the button and label text for the `/eclist` menu — `open`, `rename`, `set-main`, `back`, and so on.
 
 ## Adding a translation
 

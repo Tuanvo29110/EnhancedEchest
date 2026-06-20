@@ -21,10 +21,12 @@ import java.util.List;
 @SuppressWarnings("UnstableApiUsage")
 public final class EnhancedEChestBootstrap implements PluginBootstrap {
 
-    /** Base permission gating every {@code /ec} command; without it the command is hidden. */
-    private static final String EC_BASE_PERMISSION = "ec.use";
-    /** Base permission gating every {@code /ee} command; without it the command is hidden. */
-    private static final String EE_BASE_PERMISSION = "ee.admin";
+    /** Permission to open the ender chest GUI via command ({@code /enderchest}, {@code /eclist}). */
+    private static final String OPEN_GUI_PERMISSION = "enhancedechest.command.open";
+    /** Base permission gating every admin command; without it the {@code /enhancedechest} root is hidden. */
+    private static final String ADMIN_BASE_PERMISSION = "enhancedechest.admin";
+    private static final String ADMIN_RELOAD_PERMISSION = "enhancedechest.admin.reload";
+    private static final String ADMIN_MIGRATE_PERMISSION = "enhancedechest.admin.migrate.run";
 
     /** Suggests names of currently online players for the <player> argument. */
     private static final SuggestionProvider<CommandSourceStack> ONLINE_PLAYERS = (ctx, builder) -> {
@@ -75,12 +77,10 @@ public final class EnhancedEChestBootstrap implements PluginBootstrap {
 
     private void registerPlayerCommands(Commands commands) {
         commands.register(
-                Commands.literal("ec")
-                        .requires(src -> src.getSender().hasPermission(EC_BASE_PERMISSION))
+                Commands.literal("enderchest")
+                        .requires(src -> src.getSender().hasPermission(OPEN_GUI_PERMISSION))
                         .executes(ctx -> EnderChestOpenCommand.execute(ctx.getSource()))
-                        .then(Commands.literal("list")
-                                .executes(ctx -> EnderChestOpenCommand.executeList(ctx.getSource())))
-                        // /ec <#index | name> — open a specific chest by index or custom name
+                        // /enderchest <#index | name> — open a specific chest by index or custom name
                         .then(Commands.argument("chest", StringArgumentType.greedyString())
                                 .suggests(OWN_CHESTS)
                                 .executes(ctx -> EnderChestOpenCommand.executeOpenTarget(
@@ -88,13 +88,13 @@ public final class EnhancedEChestBootstrap implements PluginBootstrap {
                                         StringArgumentType.getString(ctx, "chest"))))
                         .build(),
                 "Open your enhanced enderchest",
-                List.of("enderchest")
+                List.of("ec")
         );
 
-        // /eclist — standalone alias for /ec list
+        // /eclist — open the chest management menu
         commands.register(
                 Commands.literal("eclist")
-                        .requires(src -> src.getSender().hasPermission(EC_BASE_PERMISSION))
+                        .requires(src -> src.getSender().hasPermission(OPEN_GUI_PERMISSION))
                         .executes(ctx -> EnderChestOpenCommand.executeList(ctx.getSource()))
                         .build(),
                 "Open your enhanced enderchest management menu"
@@ -104,10 +104,10 @@ public final class EnhancedEChestBootstrap implements PluginBootstrap {
     private void registerAdminCommands(Commands commands) {
         commands.register(
                 Commands.literal("enhancedechest")
-                        .requires(src -> src.getSender().hasPermission(EE_BASE_PERMISSION))
+                        .requires(src -> src.getSender().hasPermission(ADMIN_BASE_PERMISSION))
                         .then(Commands.literal("migrate")
                                 .then(Commands.literal("run")
-                                        .requires(src -> src.getSender().hasPermission("ee.admin.migrate.run"))
+                                        .requires(src -> src.getSender().hasPermission(ADMIN_MIGRATE_PERMISSION))
                                         .then(Commands.literal("all")
                                                 .executes(ctx -> MigrateRunCommand.executeAll(ctx.getSource())))
                                         .then(Commands.argument("player", StringArgumentType.word())
@@ -116,11 +116,11 @@ public final class EnhancedEChestBootstrap implements PluginBootstrap {
                                                         ctx.getSource(),
                                                         StringArgumentType.getString(ctx, "player"))))))
                         .then(Commands.literal("reload")
-                                .requires(src -> src.getSender().hasPermission("ee.admin.reload"))
+                                .requires(src -> src.getSender().hasPermission(ADMIN_RELOAD_PERMISSION))
                                 .executes(ctx -> ReloadCommand.execute(ctx.getSource())))
                         // /ee add <player> <size>
                         .then(Commands.literal("add")
-                                .requires(src -> src.getSender().hasPermission("ee.admin"))
+                                .requires(src -> src.getSender().hasPermission(ADMIN_BASE_PERMISSION))
                                 .then(Commands.argument("player", StringArgumentType.word())
                                         .suggests(ONLINE_PLAYERS)
                                         .then(Commands.argument("size", IntegerArgumentType.integer(9, 54))
@@ -130,7 +130,7 @@ public final class EnhancedEChestBootstrap implements PluginBootstrap {
                                                         IntegerArgumentType.getInteger(ctx, "size"))))))
                         // /ee resize <player> <index> <size>
                         .then(Commands.literal("resize")
-                                .requires(src -> src.getSender().hasPermission("ee.admin"))
+                                .requires(src -> src.getSender().hasPermission(ADMIN_BASE_PERMISSION))
                                 .then(Commands.argument("player", StringArgumentType.word())
                                         .suggests(ONLINE_PLAYERS)
                                         .then(Commands.argument("index", IntegerArgumentType.integer(1))
@@ -142,7 +142,7 @@ public final class EnhancedEChestBootstrap implements PluginBootstrap {
                                                                 IntegerArgumentType.getInteger(ctx, "size")))))))
                         // /ee delete <player> <index>
                         .then(Commands.literal("delete")
-                                .requires(src -> src.getSender().hasPermission("ee.admin"))
+                                .requires(src -> src.getSender().hasPermission(ADMIN_BASE_PERMISSION))
                                 .then(Commands.argument("player", StringArgumentType.word())
                                         .suggests(ONLINE_PLAYERS)
                                         .then(Commands.argument("index", IntegerArgumentType.integer(1))

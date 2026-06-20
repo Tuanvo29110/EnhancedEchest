@@ -36,7 +36,7 @@ Admins can trigger migration on demand for players who are online:
 | `/ee migrate run <player>` | Migrate a single online player |
 | `/ee migrate run all` | Migrate every player currently online |
 
-Both require the `ee.admin.migrate.run` permission. Players who are already migrated are reported as skipped.
+Both require the `enhancedechest.admin.migrate.run` permission. Players who are already migrated are reported as skipped.
 
 ::: warning Online players only
 Migration reads the player's live vanilla ender chest, so it only works for players who are **currently online**. Offline players are migrated automatically on their next join if `migration.enabled` is `true`.

@@ -20,7 +20,7 @@ com.enhancedechest
 ├── EnhancedEChestBootstrap   PluginBootstrap — registers Brigadier commands (COMMANDS lifecycle)
 ├── EnhancedEChestPlugin      JavaPlugin — wires services, listeners, startup banner, shutdown
 ├── command/
-│   ├── EnderChestOpenCommand        /ec, /ec list
+│   ├── EnderChestOpenCommand        /enderchest (open, #index, name), /eclist
 │   └── admin/                       /ee reload | add | resize | delete | migrate run
 ├── gui/
 │   ├── EnderChestService     open/save lifecycle, async dispatch, pending-save tracking

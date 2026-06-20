@@ -2,7 +2,6 @@ package com.enhancedechest.listener;
 
 import com.enhancedechest.gui.EnderChestAnimator;
 import com.enhancedechest.gui.EnderChestService;
-import com.enhancedechest.lang.LanguageManager;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -17,7 +16,6 @@ import org.bukkit.event.player.PlayerInteractEvent;
 public final class VanillaEnderChestListener implements Listener {
 
     private final EnderChestService service;
-    private final LanguageManager lang;
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onInteract(PlayerInteractEvent event) {
@@ -28,12 +26,9 @@ public final class VanillaEnderChestListener implements Listener {
 
         event.setCancelled(true);
 
+        // Right-clicking an ender chest block always opens the GUI — no permission required.
+        // The open-by-command permission only gates /enderchest and /eclist.
         Player player = event.getPlayer();
-        if (!player.hasPermission("ec.use")) {
-            player.sendMessage(lang.get("chest.no-permission"));
-            return;
-        }
-
         Location blockLoc = block.getLocation();
 
         // We are on the block's region thread (Folia) or main thread (Spigot/Paper),

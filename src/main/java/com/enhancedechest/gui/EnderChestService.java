@@ -27,8 +27,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * Owns the open and save lifecycle of the custom ender chest GUIs, now multi-chest.
  *
- * <p>/ec and right-click open the player's primary chest (auto-creating chest #1 if the player
- * owns none). /ec list opens a management dialog; other chests are reached from there.
+ * <p>/enderchest and right-click open the player's primary chest (auto-creating chest #1 if the
+ * player owns none). /eclist opens a management dialog; other chests are reached from there.
  *
  * <p>Dupe-safety contract (unchanged in spirit, now per chest index):
  * <ul>
@@ -211,7 +211,7 @@ public final class EnderChestService {
 
     // ---- management dialog ----
 
-    /** Loads the player's chests and shows the /ec list management dialog. */
+    /** Loads the player's chests and shows the /eclist management dialog. */
     public void openListDialog(Player player) {
         UUID uuid = player.getUniqueId();
         listChestsAsync(uuid).thenAccept(chests ->
