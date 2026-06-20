@@ -1,86 +1,46 @@
+<div align="center">
+
+<img src="docs/public/logo.png" alt="EnhancedEChest" width="120" />
+
 # EnhancedEChest
 
-EnhancedEChest is a Paper plugin that gives every player a private **54-slot** ender chest instead of the default 27. All items are saved to a database, so storage persists across restarts and world resets.
+**Bigger ender chests, saved forever.**
+
+A Paper plugin that gives every player larger, multi-chest ender storage backed by a real database — with zero duplication and zero data loss.
+
+[![Docs](https://img.shields.io/badge/docs-online-8E44AD)](https://openvdra.github.io/EnhancedEChest/)
+[![Modrinth](https://img.shields.io/badge/download-Modrinth-00AF5C)](https://modrinth.com/plugin/enhancedechest)
+[![GitHub](https://img.shields.io/badge/source-GitHub-181717?logo=github)](https://github.com/OpenVdra/EnhancedEChest)
+
+📖 **[Read the full documentation →](https://openvdra.github.io/EnhancedEChest/)**
+
+</div>
+
+---
 
 ## Features
 
-- Double-size ender chest (54 slots) opened through the normal ender chest block or `/ec`
-- Database-backed storage with support for SQLite (built-in, zero setup) and MySQL / MariaDB
-- No item duplication: inventory is loaded fresh on open and saved immediately on close
-- Migration system to import existing vanilla ender chest contents on first join
-- No external dependencies required on the server; everything is bundled in the jar
+- 📦 **Up to 54 slots** — a full double chest instead of the vanilla 27
+- 🗂️ **Multiple chests per player** — open, name, and switch between them from an in-game menu
+- 💾 **Database-backed** — SQLite (zero setup), MySQL, MariaDB, or PostgreSQL
+- 🛡️ **No duplication** — fresh load on open, immediate save on close
+- 🔄 **Migration** — import existing vanilla ender chest contents
+- 🌿 **Folia ready** — runs on Paper, Folia, and Paper forks; all libraries bundled
 
 ## Requirements
 
-- Paper 1.21.11 or newer
-- Java 21 or newer
+- Paper 1.21.11+ (or Folia / a Paper fork)
+- Java 21+
 
-> Spigot and other forks are not supported.
+## Quick Start
 
-## Installation
-
-1. Download the latest `.jar` from the [Releases](../../releases) page.
+1. Download the latest `.jar` from [Releases](https://github.com/OpenVdra/EnhancedEChest/releases) or [Modrinth](https://modrinth.com/plugin/enhancedechest).
 2. Drop it into your server's `plugins/` folder.
-3. Restart the server.
+3. Restart the server. It runs on SQLite out of the box.
 
-The plugin creates `plugins/EnhancedEChest/config.yml` and a SQLite database file automatically on first startup.
+Grant `ee.use` to your players so they can open their ender chest, then run `/ec`.
 
-## Configuration
-
-`plugins/EnhancedEChest/config.yml`:
-
-```yaml
-language: en_US              # Locale folder to load messages from
-
-database:
-  type: sqlite               # Use "sqlite" or "mysql"
-  sqlite-file: enderchests.db
-
-  # Fill these in only if you use MySQL / MariaDB
-  host: localhost
-  port: 3306
-  database: enhancedechest
-  username: root
-  password: ""
-  pool-size: 10
-
-migration:
-  enabled: false             # Set to true to auto-import vanilla ender chest data on first join
-```
-
-After changing the config, run `/enhancedechest reload` to apply without restarting.
-
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `/ec` | Open your ender chest |
-| `/enhancedechest reload` | Reload the config |
-| `/enhancedechest migrate run <player>` | Migrate a specific online player's vanilla ender chest |
-| `/enhancedechest migrate run all` | Migrate all online players at once |
-
-`/enderchest` is an alias for `/ec`. `/ee` is an alias for `/enhancedechest`.
-
-## Permissions
-
-All permissions default to operators only.
-
-| Permission | Description |
-|------------|-------------|
-| `ee.use` | Open the ender chest via block or command |
-| `ee.admin.reload` | Reload the config |
-| `ee.admin.migrate.run` | Run migration for a player or all players |
-
-## Language
-
-Messages are loaded from `plugins/EnhancedEChest/language/<locale>/`.
-
-| File | Contents |
-|------|----------|
-| `messages.yml` | All player-facing messages and the plugin prefix |
-| `gui.yml` | Inventory title |
-
-To create a new locale, copy the `en_US` folder, rename it, then set `language: <your-locale>` in `config.yml`.
+Full setup, commands, permissions, database, and migration guides are in the **[documentation](https://openvdra.github.io/EnhancedEChest/)**.
 
 ## Credits
 
@@ -88,4 +48,4 @@ Plugin icon by [m11.dalp.sh](https://m11.dalp.sh/).
 
 ## License
 
-This project is licensed under the GPLv3 License - see the [LICENSE](LICENSE) file for details.
+Licensed under the GPLv3 License — see [LICENSE](LICENSE) for details.

@@ -1,0 +1,122 @@
+# Main Configuration
+
+The `config.yml` file lives in `plugins/EnhancedEChest/`. It controls language, chest size, the database backend, and migration behavior.
+
+Click any option or category to view additional information.
+
+::: tip Apply changes without a restart
+After editing `config.yml`, run `/ee reload` in-game or from the console to apply your changes.
+:::
+
+<div style="background-color: var(--vp-c-bg-alt); padding: 20px; border-radius: 12px; margin-top: 20px;">
+
+<ConfigProperty name="language" value="en_US" type="string">
+
+Language folder to load from <code>plugins/EnhancedEChest/language/</code>. The plugin ships with <code>en_US</code> (English). To add a translation, copy the <code>en_US</code> folder, rename it, translate the files inside, and set this option to the new folder name.<br><br>
+See the <a href="/docs/language">Language</a> page for the full list of message keys.
+
+</ConfigProperty>
+
+<ConfigGroup name="enderchest">
+<template #info>
+Controls the ender chests themselves.
+</template>
+
+<ConfigProperty name="default-size" value="54" type="number">
+Slot count of the chest that is auto-created the first time a player ever opens their ender chest. Must be a multiple of <code>9</code>, between <code>9</code> and <code>54</code>. Invalid values are rounded to the nearest valid size.<br><br>
+
+| Value | Rows |
+|-------|------|
+| <code>9</code> | 1 |
+| <code>18</code> | 2 |
+| <code>27</code> | 3 (vanilla size) |
+| <code>36</code> | 4 |
+| <code>45</code> | 5 |
+| <code>54</code> | 6 (double chest) |
+
+</ConfigProperty>
+
+</ConfigGroup>
+
+<ConfigGroup name="database">
+<template #info>
+Configures where ender chest contents are stored. SQLite works out of the box with no setup. See the Database page for MySQL, MariaDB, and PostgreSQL setup.
+</template>
+
+<ConfigProperty name="type" value="sqlite" type="string">
+Storage backend. Supported values: <code>sqlite</code>, <code>mysql</code>, <code>mariadb</code>, <code>postgres</code>.
+</ConfigProperty>
+
+<ConfigProperty name="sqlite-file" value="enderchests.db" type="string">
+SQLite database file, relative to the plugin's data folder. Only used when <code>type</code> is <code>sqlite</code>.
+</ConfigProperty>
+
+<ConfigProperty name="host" value="localhost" type="string">
+Database host. Used by <code>mysql</code>, <code>mariadb</code>, and <code>postgres</code>.
+</ConfigProperty>
+
+<ConfigProperty name="port" value="3306" type="number">
+Database port. Default <code>3306</code> for MySQL/MariaDB, <code>5432</code> for PostgreSQL.
+</ConfigProperty>
+
+<ConfigProperty name="database" value="enhancedechest" type="string">
+Name of the database (schema) to connect to.
+</ConfigProperty>
+
+<ConfigProperty name="username" value="root" type="string">
+Database username.
+</ConfigProperty>
+
+<ConfigProperty name="password" value="" type="string">
+Database password. Leave empty for no password.
+</ConfigProperty>
+
+<ConfigProperty name="pool-size" value="10" type="number">
+Maximum number of pooled database connections. SQLite always uses a single connection regardless of this value.
+</ConfigProperty>
+
+</ConfigGroup>
+
+<ConfigGroup name="migration">
+<template #info>
+Controls automatic import of existing vanilla ender chest data. See the Migration page for the full workflow.
+</template>
+
+<ConfigProperty name="enabled" value="false" type="boolean">
+When <code>true</code>, any player who has not yet been migrated has their vanilla ender chest contents imported automatically when they join. Migration runs only once per player.
+</ConfigProperty>
+
+</ConfigGroup>
+
+</div>
+
+## Full Example
+
+```yaml
+# EnhancedEChest configuration
+
+# Language locale to load from language/<locale>/
+language: en_US
+
+enderchest:
+  # Slot count of the chest auto-created the first time a player opens their ender chest.
+  # Must be a multiple of 9, between 9 and 54. Invalid values are rounded.
+  default-size: 54
+
+database:
+  # Storage backend: sqlite | mysql | mariadb | postgres
+  type: sqlite
+  # SQLite: path relative to plugin data folder
+  sqlite-file: enderchests.db
+  # MySQL/MariaDB default port: 3306 | Postgres default port: 5432
+  host: localhost
+  port: 3306
+  database: enhancedechest
+  username: root
+  password: ""
+  pool-size: 10
+
+migration:
+  # When true: un-migrated players have their vanilla enderchest imported on join
+  enabled: false
+```
