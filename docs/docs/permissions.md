@@ -1,57 +1,55 @@
 # Permissions
 
-All nodes live under the `enhancedechest.` namespace, default to `op`, and hide their command when missing. Click any node to copy it.
+EnhancedEchest uses Brigadier permission gates on every command. **All** nodes default to `op`, so
+out of the box only operators can use the commands — grant the nodes below through your permission
+plugin (LuckPerms, etc.) to open them up to other ranks.
 
-::: info Right-clicking the block needs no permission
-`enhancedechest.command.open` only gates the commands — right-clicking an ender chest block always works for everyone. To let all players use `/enderchest` and `/eclist`, grant it to the default group (set it to `true`).
-:::
-
-## Default Values
-
-| Value | Meaning |
-|-------|---------|
-| `op` | Server operators only (the default for every node) |
-| `true` | All players by default |
-| `false` | Nobody by default; must be granted explicitly |
-
-## Player Permissions
+## Player permission
 
 <BaseTable :columns="['Permission', 'Description', 'Default']" grid="2fr 3fr 0.6fr">
 
 <PermRow permission="enhancedechest.command.open" defaultVal="op">
-Open the GUI by command: <code>/enderchest</code> (<code>/ec</code>), <code>/eclist</code>, and <code>/enderchest #&lt;index&gt;</code> / <code>&lt;name&gt;</code>.
+Open the ender chest by command (<code>/enderchest</code>, <code>/ec</code>, <code>/eclist</code>) and use the <strong>Set as main</strong> action in the menu. Right-clicking an ender chest <em>block</em> never requires this — but a player without it who owns several chests can never set a main, so block right-click always opens the management menu for them.
 </PermRow>
 
 </BaseTable>
 
-## Admin Permissions
+## Admin permissions
 
-Admin commands need the base `enhancedechest.admin` **plus** the specific node below — the base alone grants nothing.
+Admin commands use a **two-key** model: every `/ee` subcommand checks the base node
+`enhancedechest.admin` **and** its own specific node below. Granting a specific node alone is not
+enough — the player also needs `enhancedechest.admin`. There is no inheritance between them.
 
 <BaseTable :columns="['Permission', 'Description', 'Default']" grid="2fr 3fr 0.6fr">
 
 <PermRow permission="enhancedechest.admin" defaultVal="op">
-Base node for every <code>/enhancedechest</code> (<code>/ee</code>) command — combine with a node below.
-</PermRow>
-
-<PermRow permission="enhancedechest.admin.reload" defaultVal="op">
-Use <code>/ee reload</code>.
-</PermRow>
-
-<PermRow permission="enhancedechest.admin.migrate.run" defaultVal="op">
-Use <code>/ee migrate run</code>.
+Base permission required for <strong>every</strong> <code>/enhancedechest</code> (<code>/ee</code>) admin command, in addition to the command-specific node.
 </PermRow>
 
 <PermRow permission="enhancedechest.admin.add" defaultVal="op">
-Use <code>/ee add</code>.
+Use <code>/ee add &lt;player&gt; &lt;size&gt; [duration]</code> to give a player a new (optionally temporary) chest.
 </PermRow>
 
 <PermRow permission="enhancedechest.admin.resize" defaultVal="op">
-Use <code>/ee resize</code>.
+Use <code>/ee resize &lt;player&gt; &lt;index&gt; &lt;size&gt;</code> to change a chest's slot count (spilling overflow on shrink).
 </PermRow>
 
 <PermRow permission="enhancedechest.admin.delete" defaultVal="op">
-Use <code>/ee delete</code>.
+Use <code>/ee delete &lt;player&gt; &lt;index&gt; [force]</code> to delete a chest (spilling its items, or hard-deleting with <code>force</code>).
+</PermRow>
+
+<PermRow permission="enhancedechest.admin.reload" defaultVal="op">
+Use <code>/ee reload</code> to reload the configuration and language files from disk.
+</PermRow>
+
+<PermRow permission="enhancedechest.admin.migrate.run" defaultVal="op">
+Use <code>/ee migrate run &lt;player&gt;</code> and <code>/ee migrate run all</code> to import vanilla ender chest contents.
 </PermRow>
 
 </BaseTable>
+
+::: tip Granting admin access in one go
+To give a moderator full admin access, grant both `enhancedechest.admin` and the specific nodes they
+need (or a wildcard like `enhancedechest.admin.*` if your permission plugin expands it — remember they
+**also** need the plain `enhancedechest.admin` base node).
+:::

@@ -31,8 +31,10 @@ import java.util.function.Supplier;
 /**
  * Owns the open and save lifecycle of the custom ender chest GUIs, now multi-chest.
  *
- * <p>/enderchest and right-click open the player's primary chest (auto-creating chest #1 if the
- * player owns none). /eclist opens a management dialog; other chests are reached from there.
+ * <p>/enderchest and right-click open a single chest directly (auto-creating chest #1 if the player
+ * owns none). With 2+ chests they open the chosen main directly if one is set (and the player may use
+ * it), otherwise the management dialog. /eclist always opens the management dialog. A main is never
+ * auto-assigned — it is set only via the dialog's "Set as main" action.
  *
  * <p>Dupe-safety contract (unchanged in spirit, now per chest index):
  * <ul>
@@ -91,9 +93,15 @@ public final class EnderChestService {
     /**
      * Default open entry point for {@code /enderchest} and right-click:
      * <ul>
-     *   <li>0 or 1 chest — opens the primary chest directly (creating chest #1 if the player owns none);</li>
-     *   <li>2+ chests — opens the management list dialog so the player picks which to open.</li>
+     *   <li>0 or 1 chest — opens that chest directly (creating chest #1 if the player owns none);</li>
+     *   <li>2+ chests, an explicit main is set <i>and</i> the player may use it — opens the main directly;</li>
+     *   <li>2+ chests otherwise — opens the management list dialog so the player picks (or sets a main).</li>
      * </ul>
+     *
+     * <p>A main is never auto-assigned at creation, so a multi-chest player who has not chosen one
+     * always lands on the management dialog. Setting a main returns them to the open-directly path.
+     * Players without the open-by-command permission can never have an effective main, so with 2+
+     * chests they always get the dialog. {@code /eclist} still reaches the dialog regardless.
      *
      * @param sourceBlock ender chest block location if opened via right-click; null for command/dialog
      */
@@ -104,12 +112,23 @@ public final class EnderChestService {
             closeExistingGui(player);
             listChestsAsync(uuid)
                     .thenAccept(chests -> {
-                        if (chests.size() >= 2) {
+                        // 0 or 1 chest: open it directly (bootstrapping chest #1 if the player owns none).
+                        if (chests.size() <= 1) {
+                            openPrimaryChest(player, uuid, sourceBlock);
+                            return;
+                        }
+                        // 2+ chests: only an explicitly-flagged main, set by a player who may use it,
+                        // bypasses the dialog. Otherwise show the management list.
+                        Integer mainIndex = canSetMain
+                                ? chests.stream().filter(ChestSummary::primary)
+                                        .map(ChestSummary::index).findFirst().orElse(null)
+                                : null;
+                        if (mainIndex != null) {
+                            openChest(player, mainIndex, sourceBlock);
+                        } else {
                             foliaLib.getScheduler().runAtEntity(player, task -> {
                                 if (player.isOnline()) player.showDialog(dialogs.listDialog(chests, canSetMain, sourceBlock));
                             });
-                        } else {
-                            openPrimaryChest(player, uuid, sourceBlock);
                         }
                     })
                     .exceptionally(e -> reportOpenFailure(player, e));
@@ -187,7 +206,8 @@ public final class EnderChestService {
     private int resolvePrimaryIndex(UUID uuid) {
         int index = storage.getPrimaryIndex(uuid);
         if (index == -1) {
-            // First-ever access: createChest flags this first chest as primary automatically.
+            // First-ever access: bootstrap chest #1. It is NOT flagged primary — with a single chest,
+            // getPrimaryIndex falls back to the lowest index, so /ec still opens it directly.
             index = storage.createChest(uuid, defaultSize);
         }
         return index;

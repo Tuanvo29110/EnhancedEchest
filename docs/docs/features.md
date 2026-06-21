@@ -43,7 +43,7 @@ Run <code>/eclist</code> to open a dialog listing every chest the player owns, e
 </FeatureCard>
 
 <FeatureCard icon="⭐" title="Main Chest">
-One chest is always the <strong>main</strong> chest — the one opened by <code>/ec</code> and by right-clicking an ender chest block. Players can promote any chest to main from the menu.
+With several chests, a player can pick one as their <strong>main</strong> — the one opened directly by <code>/ec</code> and by right-clicking an ender chest block. Until a main is chosen, those open the management menu instead. A new chest is never made main automatically; players set it from the menu (and can always reach the menu with <code>/eclist</code>).
 </FeatureCard>
 
 <FeatureCard icon="✏️" title="Custom Names">
@@ -51,7 +51,7 @@ Each chest can be given a custom name. Named chests show that name as their inve
 </FeatureCard>
 
 <FeatureCard icon="🛠️" title="Admin Management">
-Admins can add, resize, and delete chests for any player with <code>/ee add</code>, <code>/ee resize</code>, and <code>/ee delete</code>. Deleting the main chest automatically promotes another to take its place.
+Admins can add, resize, and delete chests for any player with <code>/ee add</code>, <code>/ee resize</code>, and <code>/ee delete</code>. Deleting the main chest leaves the player with no main until they pick a new one from the menu.
 </FeatureCard>
 
 </CardGrid>

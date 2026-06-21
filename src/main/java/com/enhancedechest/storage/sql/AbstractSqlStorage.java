@@ -43,12 +43,6 @@ public abstract class AbstractSqlStorage implements EnderChestStorage {
     private static final String SQL_MAX_INDEX =
             "SELECT COALESCE(MAX(chest_index), 0) FROM enderchests WHERE player_uuid = ?";
 
-    private static final String SQL_COUNT =
-            "SELECT COUNT(*) FROM enderchests WHERE player_uuid = ?";
-
-    private static final String SQL_COUNT_NORMAL =
-            "SELECT COUNT(*) FROM enderchests WHERE player_uuid = ? AND kind = 0";
-
     private static final String SQL_EXISTS =
             "SELECT 1 FROM enderchests WHERE player_uuid = ? AND chest_index = ?";
 
@@ -91,13 +85,6 @@ public abstract class AbstractSqlStorage implements EnderChestStorage {
 
     private static final String SQL_SET_PRIMARY =
             "UPDATE enderchests SET is_primary = 1 WHERE player_uuid = ? AND chest_index = ?";
-
-    private static final String SQL_COUNT_PRIMARY =
-            "SELECT COUNT(*) FROM enderchests WHERE player_uuid = ? AND is_primary = 1";
-
-    // Promotion target after a delete: lowest-indexed NORMAL chest (temp chests are never primary).
-    private static final String SQL_MIN_INDEX =
-            "SELECT chest_index FROM enderchests WHERE player_uuid = ? AND kind = 0 ORDER BY chest_index ASC LIMIT 1";
 
     private static final String SQL_IS_MIGRATED =
             "SELECT migrated FROM enderchests WHERE player_uuid = ? AND chest_index = 1";
@@ -219,11 +206,10 @@ public abstract class AbstractSqlStorage implements EnderChestStorage {
         try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(false);
             try {
-                // Index is max+1 over ALL rows (temp included) to avoid a PK collision; the primary
-                // flag, however, is granted to the first NORMAL chest even if temp chests already exist.
+                // Index is max+1 over ALL rows (temp included) to avoid a PK collision. No chest is
+                // ever auto-flagged primary: the main chest is an explicit player choice (setPrimary).
                 int newIndex = queryInt(conn, SQL_MAX_INDEX, owner.toString()) + 1;
-                boolean first = queryInt(conn, SQL_COUNT_NORMAL, owner.toString()) == 0;
-                insertChest(conn, owner, newIndex, size, first, ChestKind.NORMAL, expiresAt);
+                insertChest(conn, owner, newIndex, size, false, ChestKind.NORMAL, expiresAt);
                 conn.commit();
                 return newIndex;
             } catch (SQLException e) {
@@ -246,8 +232,8 @@ public abstract class AbstractSqlStorage implements EnderChestStorage {
                     conn.commit();
                     return;
                 }
-                boolean first = queryInt(conn, SQL_COUNT_NORMAL, owner.toString()) == 0;
-                insertChest(conn, owner, index, size, first, ChestKind.NORMAL, null);
+                // No auto-primary on migration either — the player sets their main explicitly.
+                insertChest(conn, owner, index, size, false, ChestKind.NORMAL, null);
                 conn.commit();
             } catch (SQLException e) {
                 conn.rollback();
@@ -283,7 +269,6 @@ public abstract class AbstractSqlStorage implements EnderChestStorage {
                     ps.setInt(2, index);
                     ps.executeUpdate();
                 }
-                promotePrimaryIfNeeded(conn, owner);
                 conn.commit();
             } catch (SQLException e) {
                 conn.rollback();
@@ -344,7 +329,6 @@ public abstract class AbstractSqlStorage implements EnderChestStorage {
                     ps.setInt(2, index);
                     ps.executeUpdate();
                 }
-                promotePrimaryIfNeeded(conn, owner);
                 conn.commit();
             } catch (SQLException e) {
                 conn.rollback();
@@ -469,21 +453,6 @@ public abstract class AbstractSqlStorage implements EnderChestStorage {
             ps.setLong(5, System.currentTimeMillis());
             ps.setLong(6, expiresAt);
             ps.executeUpdate();
-        }
-    }
-
-    /** Promotes the lowest-indexed NORMAL chest to primary if no primary flag currently remains. */
-    private void promotePrimaryIfNeeded(Connection conn, UUID owner) throws SQLException {
-        if (queryInt(conn, SQL_COUNT_PRIMARY, owner.toString()) != 0) {
-            return;
-        }
-        int min = queryInt(conn, SQL_MIN_INDEX, owner.toString());
-        if (min > 0) {
-            try (PreparedStatement ps = conn.prepareStatement(SQL_SET_PRIMARY)) {
-                ps.setString(1, owner.toString());
-                ps.setInt(2, min);
-                ps.executeUpdate();
-            }
         }
     }
 

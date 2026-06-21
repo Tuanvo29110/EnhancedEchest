@@ -60,13 +60,30 @@ com.enhancedechest
 
 This is the most important part of the system and must not be regressed.
 
-### Opening
+### Open routing (`/ec`, right-click)
 
-`EnderChestService.open(player, sourceBlock)` (and `openChest(index)`):
+`EnderChestService.open(player, sourceBlock)` first lists the player's chests and decides what to show:
+
+- **0 or 1 chest** → open it directly (bootstrapping chest #1 via `createChest` if the player owns none).
+- **2+ chests, an explicit main is flagged *and* the player has `enhancedechest.command.open`** → open the
+  flagged main directly (`openChest`).
+- **2+ chests otherwise** (no main chosen, or no permission) → show the `/eclist` management dialog.
+
+A main is **never** auto-assigned — `createChest`/`ensureChest` insert with `is_primary = 0`, and deletes
+no longer promote a survivor. So a multi-chest player who has not run "Set as main" always lands on the
+dialog; choosing a main returns them to the open-directly path. `/eclist` reaches the dialog regardless.
+Players without `enhancedechest.command.open` can never have an effective main, so with 2+ chests they
+always get the dialog. The list dialog marks the main chest with a gold `★` (matching the
+"Set as main" button icon).
+
+### Opening (dupe-safe load)
+
+The direct-open path — `openPrimaryChest` / `openChest(index)`:
 
 1. Hop onto the player's entity thread (`foliaLib.runAtEntity`).
 2. Close any existing custom GUI synchronously (`closeExistingGui`) — its close triggers a save.
-3. Resolve the chest index (primary, bootstrapping chest #1 via `createChest` if the player owns none).
+3. Resolve the chest index (the flagged main, or — when none is flagged — the lowest index via
+   `getPrimaryIndex`; bootstrapping chest #1 via `createChest` if the player owns none).
 4. **Wait** for any in-flight save of *that same* `(owner, index)` to finish (`waitPending`), so a
    reopen can never read pre-save data.
 5. Load the row from the DB on the async executor.
@@ -110,20 +127,22 @@ pool (pool size 1 for SQLite, configurable otherwise).
 | `chest_index` | part of PK; per-player 1-based index |
 | `size` | slot count (multiple of 9, 9–54) |
 | `custom_name` | nullable; null → default numbered title |
-| `is_primary` | which chest `/ec` opens; exactly one per player |
+| `is_primary` | the player's chosen main; **zero or one** per player (set only by "Set as main") |
 | `container_data` | nullable serialized bytes (`ContainerCodec`) |
 | `migrated` | flag, meaningful on chest #1 only |
 | `last_updated` | write timestamp |
 | `kind` | `0` = NORMAL, `1` = TEMP (overflow chest) — see *Expiry & temporary chests* |
 | `expires_at` | nullable epoch-ms expiry; `NULL` = never. Indexed (`idx_enderchests_expires`) |
 
-Key operations: `createChest` (next index, first **normal** chest auto-primary; optional `expiresAt`
-for an expiring granted chest), `ensureChest` (create at a fixed index if absent — used by migration),
-`resizeChest`, `deleteChest` (promotes the lowest-index **NORMAL** survivor to primary if the deleted
-one was primary), `renameChest`, `setPrimary` (clear-then-set in a transaction), `isMigrated`/`setMigrated`,
+Key operations: `createChest` (next index, **never** auto-primary; optional `expiresAt`
+for an expiring granted chest), `ensureChest` (create at a fixed index if absent — used by migration,
+also never auto-primary), `resizeChest`, `deleteChest` (no longer promotes a survivor — if the deleted
+chest was the main, the player simply has no main until they pick one), `renameChest`, `setPrimary`
+(clear-then-set in a transaction — the only way a chest becomes primary), `isMigrated`/`setMigrated`,
 plus the item-moving `spillShrink` / `spillRemove` and the sweeper query `findExpired`. `saveChest` is
-**UPDATE-only** and never touches size, name, or primary. Primary resolution (`SQL_PRIMARY`) and
-promotion (`SQL_MIN_INDEX`) both filter `kind = 0`, so temp chests are never primary.
+**UPDATE-only** and never touches size, name, or primary. Primary resolution (`SQL_PRIMARY`) filters
+`kind = 0` and orders `is_primary DESC, chest_index ASC`, so it returns the flagged main when one exists
+and otherwise the lowest-indexed NORMAL chest; temp chests are never primary.
 
 ## Serialization
 

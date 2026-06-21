@@ -12,8 +12,7 @@ enderchest:
   title-numbered: 'Ender Chest {index}'
   # Inventory window / dialog title of a temporary (overflow) chest.
   # Temp chests never use the numbered title above — they always show this name.
-  # Red warning icon, white text.
-  title-temp: '<red>⚠ <white>Temporary Storage'
+  title-temp: '<red>⚠ <reset>Temporary Storage'
 
 # ----------------------------------------------------------------------------
 #  /ec list management dialogs
@@ -64,7 +63,8 @@ dialog:
   # ===== Tags & tooltips =====
   # Slot-count tooltip shown when hovering a chest in the list. {size} = slot count.
   slots: '<white>{size} slots'
-  # Appended to the label of the chest that /ec opens.
-  main-tag: '<white>(main)'
+  # Appended to the label of the main chest (the one /ec opens). A gold star matching the
+  # "Set as main" button's ★ icon, so the list marks the main chest with the same symbol.
+  main-tag: '<gold>★'
   # Static "time remaining" snapshot shown on chests that expire. {time} e.g. "23h 45m".
   expires-in: '<white>Expires in {time}'

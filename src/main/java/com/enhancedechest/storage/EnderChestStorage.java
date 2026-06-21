@@ -43,7 +43,7 @@ public interface EnderChestStorage {
 
     /**
      * Creates a new permanent chest with the next free index (max+1, or 1 if the player has none).
-     * The very first chest a player gets is automatically flagged primary.
+     * No chest is ever auto-flagged primary; the main chest is set only via {@link #setPrimary}.
      *
      * @return the index assigned to the new chest
      */
@@ -54,7 +54,7 @@ public interface EnderChestStorage {
     /**
      * Creates a new NORMAL chest with the next free index. If {@code expiresAt} is non-null the
      * chest expires at that epoch-millis instant (an expirable granted chest); null = never expires.
-     * The very first chest a player gets is automatically flagged primary.
+     * No chest is ever auto-flagged primary; the main chest is set only via {@link #setPrimary}.
      *
      * @return the index assigned to the new chest
      */
@@ -74,7 +74,7 @@ public interface EnderChestStorage {
     /**
      * Deletes a chest, optionally spilling its items into a new temp chest, in one transaction.
      * If {@code items} is non-null a temp chest holding them is inserted before the original row is
-     * deleted; the primary flag is promoted among the player's remaining NORMAL chests if needed.
+     * deleted. No survivor is promoted to primary (the main is an explicit player choice).
      *
      * @param tempSize slot count of the temp chest created for the items (ignored if {@code items} is null)
      */
@@ -88,7 +88,7 @@ public interface EnderChestStorage {
 
     /**
      * Creates a chest at a specific index if it does not already exist (used by migration).
-     * No-op if the row already exists. The first chest created is flagged primary.
+     * No-op if the row already exists. Never auto-flags primary.
      */
     void ensureChest(UUID owner, int index, int size);
 
@@ -96,8 +96,8 @@ public interface EnderChestStorage {
     void resizeChest(UUID owner, int index, int size);
 
     /**
-     * Deletes a chest. If the deleted chest was primary and others remain, the
-     * lowest-indexed survivor is promoted to primary.
+     * Deletes a chest. No survivor is promoted: if the deleted chest was the main, the player
+     * simply has no main until they choose one again.
      */
     void deleteChest(UUID owner, int index);
 

@@ -45,6 +45,17 @@ For the full design, read [ARCHITECTURE.md](ARCHITECTURE.md). For user-facing do
   clickable update link stays MiniMessage. Keys live in `language/<locale>/{messages,gui}.yml`.
 - **Config / language migrations:** `ConfigMigrations` + `YamlMigrator` rename keys on load so existing
   installs upgrade cleanly. Add a rename rule there rather than silently changing a key name.
+- **Open routing & the "main" chest** (`EnderChestService.open`): `/ec` and right-click decide between
+  opening a chest directly vs. showing the `/eclist` management dialog —
+  - **0–1 chest** → open it directly (bootstrapping chest #1 if none).
+  - **2+ chests + an explicit main flagged + caller has `enhancedechest.command.open`** → open the main directly.
+  - **2+ chests otherwise** (no main set, or no permission) → management dialog.
+  The main chest is **never auto-assigned**: `createChest`/`ensureChest` insert with `is_primary = 0` and
+  deletes do not promote a survivor — it is set only by the dialog's "Set as main" (`setPrimary`). So
+  `is_primary` is zero-or-one per player; `getPrimaryIndex`/`SQL_PRIMARY` falls back to the lowest NORMAL
+  index when none is flagged (keeps single-chest `/ec` working). The list main tag is a gold `★`,
+  matching the "Set as main" button's icon (`gui.yml dialog.main-tag`).
+  Don't reintroduce auto-primary — it breaks the "user explicitly chooses their main" model.
 
 ## Docs site
 
