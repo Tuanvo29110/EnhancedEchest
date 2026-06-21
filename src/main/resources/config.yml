@@ -17,6 +17,13 @@ temp-enderchest:
   expiry: 24h
   # How often the plugin scans for expired chests.
   check-interval: 5m
+  # Sound played to a player who tries to deposit into a take-only temporary chest.
+  # Applies on /ee reload (no restart needed).
+  deny-sound:
+    # Set to false to play no sound.
+    enabled: true
+    # Any Minecraft sound id. Default is the villager "no" grunt.
+    key: minecraft:entity.villager.no
 
 database:
   # NOTE: changes to ANY setting in this 'database' section require a FULL SERVER RESTART.

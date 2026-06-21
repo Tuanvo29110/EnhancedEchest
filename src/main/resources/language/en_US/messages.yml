@@ -17,7 +17,7 @@ chest:
   unknown: '{prefix}&fNo ender chest matches "{query}".'
   none: '{prefix}&fYou do not have any ender chests yet.'
   # Shown (on the action bar) when a player tries to put an item into a temporary chest.
-  temp-take-only: '&fThis is a temporary chest. You can only take items out, not put them in.'
+  temp-take-only: '&cThis is a temporary chest. You can only take items out, not put them in.'
 
 migrate:
   no-players: '{prefix}&fNo players are online.'

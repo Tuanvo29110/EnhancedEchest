@@ -3,6 +3,8 @@ package com.enhancedechest.config;
 import com.enhancedechest.util.DurationFormat;
 import lombok.Getter;
 import lombok.Setter;
+import net.kyori.adventure.key.Key;
+import net.kyori.adventure.sound.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
 
 @Getter
@@ -17,6 +19,8 @@ public final class PluginConfig {
     // Temporary chests (overflow on shrink/delete/expire)
     private long tempExpiryMillis;
     private long expiryCheckIntervalMillis;
+    /** Sound played when a player tries to deposit into a take-only temp chest; null when disabled. */
+    private Sound tempDenySound;
 
     // Database — common
     private String databaseType;
@@ -47,6 +51,7 @@ public final class PluginConfig {
 
         tempExpiryMillis          = parseDuration(config.getString("temp-enderchest.expiry", "24h"), "24h");
         expiryCheckIntervalMillis = parseDuration(config.getString("temp-enderchest.check-interval", "5m"), "5m");
+        tempDenySound             = parseSound(config);
 
         databaseType = config.getString("database.type", "sqlite");
         sqliteFile   = config.getString("database.sqlite-file", "enderchests.db");
@@ -59,6 +64,24 @@ public final class PluginConfig {
         dbPoolSize = config.getInt("database.pool-size", 10);
 
         migrationEnabled = config.getBoolean("migration.enabled", false);
+    }
+
+    /**
+     * Builds the temp-chest deny sound from config. Returns {@code null} when disabled; falls back to
+     * the default villager "no" sound if the configured key is malformed.
+     */
+    private static Sound parseSound(FileConfiguration config) {
+        if (!config.getBoolean("temp-enderchest.deny-sound.enabled", true)) {
+            return null;
+        }
+        String rawKey = config.getString("temp-enderchest.deny-sound.key", "minecraft:entity.villager.no");
+        Key key;
+        try {
+            key = Key.key(rawKey);
+        } catch (IllegalArgumentException e) {
+            key = Key.key("minecraft:entity.villager.no");
+        }
+        return Sound.sound(key, Sound.Source.MASTER, 1.0f, 1.0f);
     }
 
     /** Parses a duration string, falling back to {@code fallback} (and ultimately a safe value) on error. */

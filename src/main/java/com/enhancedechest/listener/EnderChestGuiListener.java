@@ -1,5 +1,6 @@
 package com.enhancedechest.listener;
 
+import com.enhancedechest.config.PluginConfig;
 import com.enhancedechest.gui.EnderChestAnimator;
 import com.enhancedechest.gui.EnderChestHolder;
 import com.enhancedechest.gui.EnderChestService;
@@ -7,6 +8,7 @@ import com.enhancedechest.lang.LanguageManager;
 import com.enhancedechest.model.ChestKind;
 import com.tcoded.folialib.FoliaLib;
 import lombok.RequiredArgsConstructor;
+import net.kyori.adventure.sound.Sound;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -18,12 +20,23 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 @RequiredArgsConstructor
 public final class EnderChestGuiListener implements Listener {
+
+    /** Minimum gap between deny sounds per player, so spam-clicking can't machine-gun the sound. */
+    private static final long DENY_SOUND_COOLDOWN_MILLIS = 350L;
 
     private final EnderChestService service;
     private final FoliaLib foliaLib;
     private final LanguageManager lang;
+    private final PluginConfig config;
+
+    /** Last time (ms) each player heard the deny sound; cleared on chest close. */
+    private final Map<UUID, Long> lastDenySoundAt = new ConcurrentHashMap<>();
 
     /**
      * Temporary chests are take-only: items may be removed but never added. Cancels any click that
@@ -37,19 +50,23 @@ public final class EnderChestGuiListener implements Listener {
         if (holder.getKind() != ChestKind.TEMP) return;
 
         Inventory top = event.getView().getTopInventory();
-        Inventory clicked = event.getClickedInventory();
-        boolean deposit = switch (event.getAction()) {
-            // Cursor → a clicked top slot.
-            case PLACE_ALL, PLACE_SOME, PLACE_ONE, SWAP_WITH_CURSOR,
-                 HOTBAR_SWAP, HOTBAR_MOVE_AND_READD -> clicked != null && clicked.equals(top);
-            // Shift-click from the player inventory moves the stack into the temp chest.
-            case MOVE_TO_OTHER_INVENTORY -> clicked != null && !clicked.equals(top);
-            default -> false;
-        };
+        boolean deposit = isDeposit(event, top);
         if (deposit) {
             event.setCancelled(true);
             notifyTakeOnly(event.getWhoClicked());
         }
+    }
+
+    private static boolean isDeposit(InventoryClickEvent event, Inventory top) {
+        Inventory clicked = event.getClickedInventory();
+        return switch (event.getAction()) {
+            // Cursor → a clicked top slot.
+            case PLACE_ALL, PLACE_SOME, PLACE_ONE, SWAP_WITH_CURSOR,
+                 HOTBAR_SWAP -> clicked != null && clicked.equals(top);
+            // Shift-click from the player inventory moves the stack into the temp chest.
+            case MOVE_TO_OTHER_INVENTORY -> clicked != null && !clicked.equals(top);
+            default -> false;
+        };
     }
 
     /** Cancels any drag that would spread items into the temp (top) inventory slots. */
@@ -71,7 +88,22 @@ public final class EnderChestGuiListener implements Listener {
     private void notifyTakeOnly(org.bukkit.entity.HumanEntity who) {
         if (who instanceof Player p) {
             p.sendActionBar(lang.get("chest.temp-take-only"));
+            Sound sound = config.getTempDenySound();
+            if (sound != null && notOnSoundCooldown(p)) {
+                p.playSound(sound);
+            }
         }
+    }
+
+    /** True if enough time has passed since this player last heard the deny sound (and records now). */
+    private boolean notOnSoundCooldown(Player p) {
+        long now = System.currentTimeMillis();
+        Long last = lastDenySoundAt.get(p.getUniqueId());
+        if (last != null && now - last < DENY_SOUND_COOLDOWN_MILLIS) {
+            return false;
+        }
+        lastDenySoundAt.put(p.getUniqueId(), now);
+        return true;
     }
 
     /**
@@ -90,6 +122,8 @@ public final class EnderChestGuiListener implements Listener {
         Inventory top = event.getView().getTopInventory();
         InventoryHolder holder = top.getHolder();
         if (!(holder instanceof EnderChestHolder ecHolder)) return;
+
+        lastDenySoundAt.remove(event.getPlayer().getUniqueId());
 
         service.save(ecHolder, top);
 
