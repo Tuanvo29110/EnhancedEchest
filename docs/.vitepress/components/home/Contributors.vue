@@ -7,7 +7,7 @@ const error = ref(false)
 
 onMounted(async () => {
   try {
-    const res = await fetch('https://api.github.com/repos/OpenVdra/EnhancedEChest/contributors?per_page=50')
+    const res = await fetch('https://api.github.com/repos/OpenVdra/EnhancedEchest/contributors?per_page=50')
     if (!res.ok) throw new Error()
     contributors.value = await res.json()
   } catch {
@@ -23,7 +23,7 @@ onMounted(async () => {
     <div class="contributors-inner">
       <h2 class="contributors-title">Contributors</h2>
       <p class="contributors-sub">
-        EnhancedEChest is open source and built with help from the community.<br>
+        EnhancedEchest is open source and built with help from the community.<br>
         Every contribution, big or small, makes a difference.
       </p>
 
@@ -33,7 +33,7 @@ onMounted(async () => {
 
       <div v-else-if="error" class="contributors-error">
         Could not load contributors. View them on
-        <a href="https://github.com/OpenVdra/EnhancedEChest/graphs/contributors" target="_blank" rel="noopener noreferrer">GitHub</a>.
+        <a href="https://github.com/OpenVdra/EnhancedEchest/graphs/contributors" target="_blank" rel="noopener noreferrer">GitHub</a>.
       </div>
 
       <div v-else class="contributors-grid">
@@ -52,7 +52,7 @@ onMounted(async () => {
       </div>
 
       <a
-        href="https://github.com/OpenVdra/EnhancedEChest/graphs/contributors"
+        href="https://github.com/OpenVdra/EnhancedEchest/graphs/contributors"
         target="_blank"
         rel="noopener noreferrer"
         class="contributors-cta"

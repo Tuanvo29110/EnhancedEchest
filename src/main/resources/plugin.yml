@@ -1,6 +1,6 @@
-name: EnhancedEChest
+name: EnhancedEchest
 version: '${version}'
-main: com.enhancedechest.EnhancedEChestPlugin
+main: com.enhancedechest.EnhancedEchestPlugin
 api-version: '1.21'
 author: Nighter
 description: Gives every player a double-size ender chest backed by a persistent database
@@ -16,7 +16,7 @@ commands:
     usage: /eclist
     permission: enhancedechest.command.open
   enhancedechest:
-    description: EnhancedEChest admin commands
+    description: EnhancedEchest admin commands
     aliases: [ ee ]
     usage: /enhancedechest <migrate run> | reload
     permission: enhancedechest.admin

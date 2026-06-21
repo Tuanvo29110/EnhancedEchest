@@ -68,7 +68,7 @@ public final class EnderChestService {
             new ConcurrentHashMap<>();
 
     private final ExecutorService asyncExecutor = Executors.newCachedThreadPool(r -> {
-        Thread t = new Thread(r, "EnhancedEChest-db");
+        Thread t = new Thread(r, "EnhancedEchest-db");
         t.setDaemon(true);
         return t;
     });

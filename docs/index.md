@@ -2,12 +2,12 @@
 layout: home
 
 hero:
-  name: "EnhancedEChest"
+  name: "EnhancedEchest"
   text: "Bigger Ender Chests, Saved Forever"
   tagline: Give every player larger, multi-chest ender storage backed by a real database. Zero duplication, zero data loss.
   image:
     src: /logo.png
-    alt: EnhancedEChest
+    alt: EnhancedEchest
   actions:
     - theme: brand
       text: Get Started
@@ -36,8 +36,8 @@ features:
     details: Built on a region-aware scheduler — runs on Spigot, Paper, and Folia without code changes.
     link: /docs/features
   - title: 🔓 Open Source
-    details: EnhancedEChest is completely free and open source on GitHub. Fork it, build on it, or contribute back.
-    link: https://github.com/OpenVdra/EnhancedEChest
+    details: EnhancedEchest is completely free and open source on GitHub. Fork it, build on it, or contribute back.
+    link: https://github.com/OpenVdra/EnhancedEchest
 ---
 
 <Contributors />

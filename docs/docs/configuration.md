@@ -1,6 +1,6 @@
 # Main Configuration
 
-The `config.yml` file lives in `plugins/EnhancedEChest/`. It controls language, chest size, the database backend, and migration behavior.
+The `config.yml` file lives in `plugins/EnhancedEchest/`. It controls language, chest size, the database backend, and migration behavior.
 
 Click any option or category to view additional information.
 
@@ -12,7 +12,7 @@ After editing `config.yml`, run `/ee reload` in-game or from the console to appl
 
 <ConfigProperty name="language" value="en_US" type="string">
 
-Language folder to load from <code>plugins/EnhancedEChest/language/</code>. The plugin ships with <code>en_US</code> (English). To add a translation, copy the <code>en_US</code> folder, rename it, translate the files inside, and set this option to the new folder name.<br><br>
+Language folder to load from <code>plugins/EnhancedEchest/language/</code>. The plugin ships with <code>en_US</code> (English). To add a translation, copy the <code>en_US</code> folder, rename it, translate the files inside, and set this option to the new folder name.<br><br>
 See the <a href="/docs/language">Language</a> page for the full list of message keys.
 
 </ConfigProperty>
@@ -93,7 +93,7 @@ When <code>true</code>, any player who has not yet been migrated has their vanil
 ## Full Example
 
 ```yaml
-# EnhancedEChest configuration
+# EnhancedEchest configuration
 
 # Language locale to load from language/<locale>/
 language: en_US

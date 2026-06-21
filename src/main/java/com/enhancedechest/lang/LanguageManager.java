@@ -61,7 +61,7 @@ public final class LanguageManager {
         messages = loadFile(base + "messages.yml");
         gui      = loadFile(base + "gui.yml");
 
-        cachedPrefix        = messages.getString("prefix", "[EnhancedEChest] ");
+        cachedPrefix        = messages.getString("prefix", "[EnhancedEchest] ");
         cachedTitleBase     = gui.getString("enderchest.title", "Ender Chest");
         cachedTitleTemplate = gui.getString("enderchest.title-numbered", "Ender Chest {index}");
         cachedTitleTemp     = gui.getString("enderchest.title-temp", "Temporary Storage");

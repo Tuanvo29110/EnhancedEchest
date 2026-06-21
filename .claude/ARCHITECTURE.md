@@ -1,11 +1,11 @@
-# EnhancedEChest — Architecture
+# EnhancedEchest — Architecture
 
-This document describes how EnhancedEChest is put together. For day-to-day conventions see
+This document describes how EnhancedEchest is put together. For day-to-day conventions see
 [CLAUDE.md](CLAUDE.md); for end-user documentation see `docs/`.
 
 ## Overview
 
-EnhancedEChest intercepts ender chest access and serves a custom inventory GUI backed by a database
+EnhancedEchest intercepts ender chest access and serves a custom inventory GUI backed by a database
 instead of the per-player vanilla ender chest. Each player can own **multiple** ender chests, each
 with its own size (9–54, multiple of 9), optional custom name, and a "primary" flag that decides which
 one `/ec` and the ender chest block open.
@@ -17,8 +17,8 @@ time, and a chest is always loaded fresh from the database on open and written b
 
 ```
 com.enhancedechest
-├── EnhancedEChestBootstrap   PluginBootstrap — registers Brigadier commands (COMMANDS lifecycle)
-├── EnhancedEChestPlugin      JavaPlugin — wires services, listeners, startup banner, shutdown
+├── EnhancedEchestBootstrap   PluginBootstrap — registers Brigadier commands (COMMANDS lifecycle)
+├── EnhancedEchestPlugin      JavaPlugin — wires services, listeners, startup banner, shutdown
 ├── command/
 │   ├── EnderChestOpenCommand        /enderchest (open, #index, name), /eclist
 │   └── admin/                       /ee reload | add | resize | delete | migrate run
@@ -46,10 +46,10 @@ com.enhancedechest
 
 ## Lifecycle
 
-1. **Bootstrap** (`EnhancedEChestBootstrap`): runs before the plugin is enabled; registers the `/ec`
+1. **Bootstrap** (`EnhancedEchestBootstrap`): runs before the plugin is enabled; registers the `/ec`
    and `/enhancedechest` command trees against the Brigadier `Commands` registrar. Commands are
    gated by permission via `.requires(...)`.
-2. **Enable** (`EnhancedEChestPlugin#onEnable`): loads config + language, constructs the storage
+2. **Enable** (`EnhancedEchestPlugin#onEnable`): loads config + language, constructs the storage
    backend (`StorageFactory.create`) and calls `init()` (creates schema), builds the
    `ContainerCodec`, `EnderChestService`, registers listeners, kicks off the async update check, and
    prints a startup banner noting the detected platform (Folia / Paper / Spigot).
@@ -88,7 +88,7 @@ failures abort the save (data is **not** written) to avoid corrupting stored byt
 
 - Storage methods are **synchronous** and thread-agnostic (see `EnderChestStorage` Javadoc).
 - `EnderChestService` is the **only** dispatcher onto `asyncExecutor` (a daemon cached thread pool
-  named `EnhancedEChest-db`).
+  named `EnhancedEchest-db`).
 - Anything touching the player/inventory/block runs on the appropriate region thread via FoliaLib.
 
 ## Storage layer
@@ -185,7 +185,7 @@ reference them), while Back / Cancel / post-mutation paths re-query the DB and r
 ## Migration
 
 `MigrationService.migrateOnline(player)` imports a player's 27-slot vanilla ender chest into their
-EnhancedEChest chest #1, in a single main-thread tick: ensure chest #1 exists at full size → copy
+EnhancedEchest chest #1, in a single main-thread tick: ensure chest #1 exists at full size → copy
 vanilla contents into its head slots → save to DB → clear the vanilla EC → set the `migrated` flag.
 There is never a window where the items exist in both places. Each player migrates once
 (`isMigrated` guard). Triggered automatically on join (when `migration.enabled`) via

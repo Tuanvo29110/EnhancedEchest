@@ -1,4 +1,4 @@
-# Download EnhancedEChest
+# Download EnhancedEchest
 
 Choose your preferred download source:
 
@@ -7,13 +7,13 @@ Choose your preferred download source:
     <img src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact/available/modrinth_vector.svg" alt="Modrinth" style="height: 28px;">
     Modrinth
   </a>
-  <a href="https://github.com/OpenVdra/EnhancedEChest/releases" target="_blank" rel="noreferrer" style="display: inline-flex; align-items: center; gap: 10px; padding: 12px 20px; background: var(--vp-c-bg-soft); border: 1px solid var(--vp-c-border); border-radius: 10px; text-decoration: none; color: var(--vp-c-text-1); font-weight: 600; transition: border-color 0.2s;">
+  <a href="https://github.com/OpenVdra/EnhancedEchest/releases" target="_blank" rel="noreferrer" style="display: inline-flex; align-items: center; gap: 10px; padding: 12px 20px; background: var(--vp-c-bg-soft); border: 1px solid var(--vp-c-border); border-radius: 10px; text-decoration: none; color: var(--vp-c-text-1); font-weight: 600; transition: border-color 0.2s;">
     🐙 GitHub Releases
   </a>
 </div>
 
 ::: info Modrinth release
-The Modrinth page is being prepared and may not be public yet. Until it goes live, grab the latest build from [GitHub Releases](https://github.com/OpenVdra/EnhancedEChest/releases).
+The Modrinth page is being prepared and may not be public yet. Until it goes live, grab the latest build from [GitHub Releases](https://github.com/OpenVdra/EnhancedEchest/releases).
 :::
 
 ## Requirements

@@ -24,7 +24,7 @@ import org.slf4j.Logger;
 import java.io.File;
 
 @Getter
-public final class EnhancedEChestPlugin extends JavaPlugin {
+public final class EnhancedEchestPlugin extends JavaPlugin {
 
     private PluginConfig pluginConfig;
     private LanguageManager languageManager;
@@ -92,7 +92,7 @@ public final class EnhancedEChestPlugin extends JavaPlugin {
         if (foliaLib != null) {
             foliaLib.getScheduler().cancelAllTasks();
         }
-        getSLF4JLogger().info("EnhancedEChest disabled.");
+        getSLF4JLogger().info("EnhancedEchest disabled.");
     }
 
     public void reload() {
@@ -118,7 +118,7 @@ public final class EnhancedEChestPlugin extends JavaPlugin {
         String locale    = pluginConfig.getLocale();
         String migration = pluginConfig.isMigrationEnabled() ? "ON" : "OFF";
         String folia     = foliaLib.isFolia() ? "Folia" : (foliaLib.isPaper() ? "Paper" : "Spigot");
-        String sep       = "——————————————[ EnhancedEChest ]——————————————";
+        String sep       = "——————————————[ EnhancedEchest ]——————————————";
 
         log.info("> {}", sep);
         log.info(">");

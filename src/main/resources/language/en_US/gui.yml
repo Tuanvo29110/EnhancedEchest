@@ -1,5 +1,5 @@
 # ============================================================================
-#  GUI / dialog text for EnhancedEChest
+#  GUI / dialog text for EnhancedEchest
 #  Format is auto-detected per line: a line containing '<' is parsed as
 #  MiniMessage, otherwise as legacy '&' colour codes. The dialog strings below
 #  use MiniMessage. Convention: the leading icon is coloured, the text is white.

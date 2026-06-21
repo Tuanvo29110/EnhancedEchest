@@ -1,6 +1,6 @@
 package com.enhancedechest.command;
 
-import com.enhancedechest.EnhancedEChestPlugin;
+import com.enhancedechest.EnhancedEchestPlugin;
 import com.mojang.brigadier.Command;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import net.kyori.adventure.text.Component;
@@ -12,9 +12,9 @@ public final class EnderChestOpenCommand {
     private EnderChestOpenCommand() {}
 
     public static int execute(CommandSourceStack source) {
-        EnhancedEChestPlugin plugin = (EnhancedEChestPlugin) Bukkit.getPluginManager().getPlugin("EnhancedEChest");
+        EnhancedEchestPlugin plugin = (EnhancedEchestPlugin) Bukkit.getPluginManager().getPlugin("EnhancedEchest");
         if (plugin == null || !plugin.isEnabled()) {
-            source.getSender().sendMessage(Component.text("[EnhancedEChest] Plugin is not available."));
+            source.getSender().sendMessage(Component.text("[EnhancedEchest] Plugin is not available."));
             return 0;
         }
 
@@ -29,9 +29,9 @@ public final class EnderChestOpenCommand {
 
     /** /eclist — opens the management dialog listing all of the player's chests. */
     public static int executeList(CommandSourceStack source) {
-        EnhancedEChestPlugin plugin = (EnhancedEChestPlugin) Bukkit.getPluginManager().getPlugin("EnhancedEChest");
+        EnhancedEchestPlugin plugin = (EnhancedEchestPlugin) Bukkit.getPluginManager().getPlugin("EnhancedEchest");
         if (plugin == null || !plugin.isEnabled()) {
-            source.getSender().sendMessage(Component.text("[EnhancedEChest] Plugin is not available."));
+            source.getSender().sendMessage(Component.text("[EnhancedEchest] Plugin is not available."));
             return 0;
         }
 
@@ -46,9 +46,9 @@ public final class EnderChestOpenCommand {
 
     /** /ec &lt;#index | name&gt; — opens a specific chest by index or custom name. */
     public static int executeOpenTarget(CommandSourceStack source, String target) {
-        EnhancedEChestPlugin plugin = (EnhancedEChestPlugin) Bukkit.getPluginManager().getPlugin("EnhancedEChest");
+        EnhancedEchestPlugin plugin = (EnhancedEchestPlugin) Bukkit.getPluginManager().getPlugin("EnhancedEchest");
         if (plugin == null || !plugin.isEnabled()) {
-            source.getSender().sendMessage(Component.text("[EnhancedEChest] Plugin is not available."));
+            source.getSender().sendMessage(Component.text("[EnhancedEchest] Plugin is not available."));
             return 0;
         }
 

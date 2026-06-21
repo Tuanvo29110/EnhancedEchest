@@ -1,6 +1,6 @@
 package com.enhancedechest.command.admin;
 
-import com.enhancedechest.EnhancedEChestPlugin;
+import com.enhancedechest.EnhancedEchestPlugin;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -10,9 +10,9 @@ public final class ReloadCommand {
     private ReloadCommand() {}
 
     public static int execute(CommandSourceStack source) {
-        EnhancedEChestPlugin plugin = (EnhancedEChestPlugin) Bukkit.getPluginManager().getPlugin("EnhancedEChest");
+        EnhancedEchestPlugin plugin = (EnhancedEchestPlugin) Bukkit.getPluginManager().getPlugin("EnhancedEchest");
         if (plugin == null || !plugin.isEnabled()) {
-            source.getSender().sendMessage(Component.text("[EnhancedEChest] Plugin is not available."));
+            source.getSender().sendMessage(Component.text("[EnhancedEchest] Plugin is not available."));
             return 0;
         }
 

@@ -1,6 +1,6 @@
-# EnhancedEChest Docs
+# EnhancedEchest Docs
 
-Documentation site for [EnhancedEChest](https://github.com/OpenVdra/EnhancedEChest), built with [VitePress](https://vitepress.dev/).
+Documentation site for [EnhancedEchest](https://github.com/OpenVdra/EnhancedEchest), built with [VitePress](https://vitepress.dev/).
 
 ## Structure
 

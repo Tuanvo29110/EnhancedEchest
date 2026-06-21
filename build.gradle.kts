@@ -47,12 +47,12 @@ tasks.withType<JavaCompile>().configureEach {
 
 // Plain jar is not the deliverable; use shadowJar instead
 tasks.jar {
-    archiveBaseName.set("EnhancedEChestPlain")
+    archiveBaseName.set("EnhancedEchestPlain")
     archiveClassifier.set("plain")
 }
 
 tasks.shadowJar {
-    archiveBaseName.set("EnhancedEChest")
+    archiveBaseName.set("EnhancedEchest")
     archiveVersion.set(version.toString())
     archiveClassifier.set("")
 

@@ -40,7 +40,7 @@ public final class MysqlStorage extends AbstractSqlStorage {
         hc.setMinimumIdle(2);
 
         hc.setConnectionTestQuery("SELECT 1");
-        hc.setPoolName("EnhancedEChest-MySQL");
+        hc.setPoolName("EnhancedEchest-MySQL");
         hc.setConnectionTimeout(10_000);
         hc.setIdleTimeout(600_000);
         hc.setMaxLifetime(1_800_000);

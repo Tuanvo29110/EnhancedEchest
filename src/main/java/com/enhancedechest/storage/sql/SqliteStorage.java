@@ -39,7 +39,7 @@ public final class SqliteStorage extends AbstractSqlStorage {
         config.setMinimumIdle(1);
 
         config.setConnectionTestQuery("SELECT 1");
-        config.setPoolName("EnhancedEChest-SQLite");
+        config.setPoolName("EnhancedEchest-SQLite");
         config.setConnectionTimeout(5_000);
         config.setIdleTimeout(0);
         config.setMaxLifetime(0);

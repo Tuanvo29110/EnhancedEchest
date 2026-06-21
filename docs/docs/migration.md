@@ -1,10 +1,10 @@
 # Migration
 
-If your players already have items in their **vanilla** ender chests, EnhancedEChest can import that data into its own storage so nothing is lost when you install the plugin.
+If your players already have items in their **vanilla** ender chests, EnhancedEchest can import that data into its own storage so nothing is lost when you install the plugin.
 
 ## How it works
 
-When a player is migrated, their 27 vanilla ender chest slots are copied into their EnhancedEChest **chest #1**, and the vanilla ender chest is cleared. The whole operation happens in a single server tick:
+When a player is migrated, their 27 vanilla ender chest slots are copied into their EnhancedEchest **chest #1**, and the vanilla ender chest is cleared. The whole operation happens in a single server tick:
 
 1. Chest #1 is created at full size if it doesn't exist yet
 2. The vanilla contents are written into the head slots of chest #1

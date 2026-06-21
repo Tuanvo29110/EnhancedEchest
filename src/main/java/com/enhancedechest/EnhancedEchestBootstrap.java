@@ -19,7 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 @SuppressWarnings("UnstableApiUsage")
-public final class EnhancedEChestBootstrap implements PluginBootstrap {
+public final class EnhancedEchestBootstrap implements PluginBootstrap {
 
     /** Permission to open the ender chest GUI via command ({@code /enderchest}, {@code /eclist}). */
     private static final String OPEN_GUI_PERMISSION = "enhancedechest.command.open";
@@ -65,8 +65,8 @@ public final class EnhancedEChestBootstrap implements PluginBootstrap {
         if (!(ctx.getSource().getSender() instanceof Player player)) {
             return builder.buildFuture();
         }
-        EnhancedEChestPlugin plugin =
-                (EnhancedEChestPlugin) Bukkit.getPluginManager().getPlugin("EnhancedEChest");
+        EnhancedEchestPlugin plugin =
+                (EnhancedEchestPlugin) Bukkit.getPluginManager().getPlugin("EnhancedEchest");
         if (plugin == null || !plugin.isEnabled()) {
             return builder.buildFuture();
         }
@@ -189,7 +189,7 @@ public final class EnhancedEChestBootstrap implements PluginBootstrap {
                                                                 StringArgumentType.getString(ctx, "player"),
                                                                 IntegerArgumentType.getInteger(ctx, "index")))))))
                         .build(),
-                "EnhancedEChest admin commands",
+                "EnhancedEchest admin commands",
                 List.of("ee")
         );
     }

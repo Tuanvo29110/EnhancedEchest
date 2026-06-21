@@ -1,11 +1,11 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
-  title: "EnhancedEChest",
+  title: "EnhancedEchest",
   description: "Database-backed multi-chest ender chest plugin for Minecraft",
-  // GitHub project page is served from /EnhancedEChest/. If you later point a custom
+  // GitHub project page is served from /EnhancedEchest/. If you later point a custom
   // domain at the site (add public/CNAME), change this back to '/'.
-  base: '/EnhancedEChest/',
+  base: '/EnhancedEchest/',
   cleanUrls: true,
   head: [
     ['link', { rel: 'icon', type: 'image/png', href: '/logo.png' }],
@@ -61,7 +61,7 @@ export default defineConfig({
     ],
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/OpenVdra/EnhancedEChest' }
+      { icon: 'github', link: 'https://github.com/OpenVdra/EnhancedEchest' }
     ],
 
     search: {
@@ -69,7 +69,7 @@ export default defineConfig({
     },
 
     editLink: {
-      pattern: 'https://github.com/OpenVdra/EnhancedEChest/edit/main/docs/:path',
+      pattern: 'https://github.com/OpenVdra/EnhancedEchest/edit/main/docs/:path',
       text: 'Edit this page on GitHub'
     }
   }

@@ -1,6 +1,6 @@
 package com.enhancedechest.command.admin;
 
-import com.enhancedechest.EnhancedEChestPlugin;
+import com.enhancedechest.EnhancedEchestPlugin;
 import com.enhancedechest.lang.LanguageManager;
 import com.enhancedechest.migration.MigrationService;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
@@ -15,7 +15,7 @@ public final class MigrateRunCommand {
     private MigrateRunCommand() {}
 
     public static int executeAll(CommandSourceStack source) {
-        EnhancedEChestPlugin plugin = resolve(source);
+        EnhancedEchestPlugin plugin = resolve(source);
         if (plugin == null) return 0;
 
         LanguageManager lang = plugin.getLanguageManager();
@@ -41,7 +41,7 @@ public final class MigrateRunCommand {
     }
 
     public static int executePlayer(CommandSourceStack source, String playerName) {
-        EnhancedEChestPlugin plugin = resolve(source);
+        EnhancedEchestPlugin plugin = resolve(source);
         if (plugin == null) return 0;
 
         LanguageManager lang = plugin.getLanguageManager();
@@ -59,10 +59,10 @@ public final class MigrateRunCommand {
         return 1;
     }
 
-    private static EnhancedEChestPlugin resolve(CommandSourceStack source) {
-        EnhancedEChestPlugin plugin = (EnhancedEChestPlugin) Bukkit.getPluginManager().getPlugin("EnhancedEChest");
+    private static EnhancedEchestPlugin resolve(CommandSourceStack source) {
+        EnhancedEchestPlugin plugin = (EnhancedEchestPlugin) Bukkit.getPluginManager().getPlugin("EnhancedEchest");
         if (plugin == null || !plugin.isEnabled()) {
-            source.getSender().sendMessage(Component.text("[EnhancedEChest] Plugin is not available."));
+            source.getSender().sendMessage(Component.text("[EnhancedEchest] Plugin is not available."));
             return null;
         }
         return plugin;

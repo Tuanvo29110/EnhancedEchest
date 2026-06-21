@@ -35,7 +35,7 @@ public final class PostgresStorage extends AbstractSqlStorage {
         hc.setMaximumPoolSize(config.getDbPoolSize());
         hc.setMinimumIdle(2);
         hc.setConnectionTestQuery("SELECT 1");
-        hc.setPoolName("EnhancedEChest-Postgres");
+        hc.setPoolName("EnhancedEchest-Postgres");
         hc.setConnectionTimeout(10_000);
         hc.setIdleTimeout(600_000);
         hc.setMaxLifetime(1_800_000);

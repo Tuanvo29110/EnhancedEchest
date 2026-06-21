@@ -1,10 +1,10 @@
 # Features ✨
 
-Here is an overview of everything **EnhancedEChest** brings to your Minecraft server.
+Here is an overview of everything **EnhancedEchest** brings to your Minecraft server.
 
 ## 📦 Larger Ender Chests
 
-EnhancedEChest replaces the vanilla 27-slot ender chest with a configurable GUI of up to **54 slots**.
+EnhancedEchest replaces the vanilla 27-slot ender chest with a configurable GUI of up to **54 slots**.
 
 <CardGrid>
 
@@ -86,7 +86,7 @@ See the [Database](/docs/database) page for connection setup.
 
 ## 🛡️ No Item Duplication
 
-EnhancedEChest is built so that ender chest contents can never be duplicated through reload exploits.
+EnhancedEchest is built so that ender chest contents can never be duplicated through reload exploits.
 
 - Contents are **loaded fresh** from the database every time a chest is opened
 - Contents are **saved immediately** when the chest is closed or the player quits
@@ -96,7 +96,7 @@ EnhancedEChest is built so that ender chest contents can never be duplicated thr
 
 ## 🔄 Migration
 
-Already have players with vanilla ender chest data? EnhancedEChest can import it.
+Already have players with vanilla ender chest data? EnhancedEchest can import it.
 
 - When <code>migration.enabled</code> is <code>true</code>, an un-migrated player's vanilla ender chest is imported automatically on join
 - Admins can trigger migration manually for one player or everyone online with <code>/ee migrate run</code>
@@ -108,7 +108,7 @@ See the [Migration](/docs/migration) page for details.
 
 ## 🌿 Cross-Platform Support
 
-EnhancedEChest uses a region-aware scheduler (FoliaLib) under the hood, so the same jar runs on:
+EnhancedEchest uses a region-aware scheduler (FoliaLib) under the hood, so the same jar runs on:
 
 | Platform | Supported |
 |----------|-----------|
@@ -122,7 +122,7 @@ All third-party libraries (database drivers, connection pool, scheduler) are sha
 
 ## 🔔 Update Notifications
 
-EnhancedEChest checks for new releases on startup and quietly notifies admins in-game when an update is available, with a clickable download link.
+EnhancedEchest checks for new releases on startup and quietly notifies admins in-game when an update is available, with a clickable download link.
 
 ---
 

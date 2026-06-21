@@ -1,12 +1,12 @@
-# Welcome to EnhancedEChest
+# Welcome to EnhancedEchest
 
-**EnhancedEChest** is a free, open-source Minecraft plugin that upgrades the vanilla ender chest into a larger, persistent, multi-chest storage system. Instead of three cramped rows that live inside a single player file, every player gets ender chests of up to **54 slots** — saved to a real database so the contents survive restarts, world resets, and server migrations.
+**EnhancedEchest** is a free, open-source Minecraft plugin that upgrades the vanilla ender chest into a larger, persistent, multi-chest storage system. Instead of three cramped rows that live inside a single player file, every player gets ender chests of up to **54 slots** — saved to a real database so the contents survive restarts, world resets, and server migrations.
 
 ## Quick Navigation
 
 <CardGrid>
 
-<DocCard icon="📥" title="Installation" link="/docs/installation" desc="Install EnhancedEChest on your server in minutes." />
+<DocCard icon="📥" title="Installation" link="/docs/installation" desc="Install EnhancedEchest on your server in minutes." />
 
 <DocCard icon="✨" title="Features" link="/docs/features" desc="Larger chests, multi-chest management, database storage, and more." />
 
@@ -20,12 +20,12 @@
 
 </CardGrid>
 
-## Why EnhancedEChest?
+## Why EnhancedEchest?
 
 <CardGrid>
 
 <FeatureCard icon="📦" title="More Space">
-The vanilla ender chest holds 27 items. EnhancedEChest gives players a configurable chest of up to 54 slots — a full double chest — opened from the same ender chest block or the <code>/ec</code> command.
+The vanilla ender chest holds 27 items. EnhancedEchest gives players a configurable chest of up to 54 slots — a full double chest — opened from the same ender chest block or the <code>/ec</code> command.
 </FeatureCard>
 
 <FeatureCard icon="🗂️" title="Multiple Chests Per Player">

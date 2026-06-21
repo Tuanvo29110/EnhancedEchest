@@ -1,18 +1,18 @@
 <div align="center">
 
-<img src="docs/public/logo.png" alt="EnhancedEChest" width="120" />
+<img src="docs/public/logo.png" alt="EnhancedEchest" width="120" />
 
-# EnhancedEChest
+# EnhancedEchest
 
 **Bigger ender chests, saved forever.**
 
 A Paper plugin that gives every player larger, multi-chest ender storage backed by a real database — with zero duplication and zero data loss.
 
-[![Docs](https://img.shields.io/badge/docs-online-8E44AD)](https://openvdra.github.io/EnhancedEChest/)
+[![Docs](https://img.shields.io/badge/docs-online-8E44AD)](https://openvdra.github.io/EnhancedEchest/)
 [![Modrinth](https://img.shields.io/badge/download-Modrinth-00AF5C)](https://modrinth.com/plugin/enhancedechest)
-[![GitHub](https://img.shields.io/badge/source-GitHub-181717?logo=github)](https://github.com/OpenVdra/EnhancedEChest)
+[![GitHub](https://img.shields.io/badge/source-GitHub-181717?logo=github)](https://github.com/OpenVdra/EnhancedEchest)
 
-📖 **[Read the full documentation →](https://openvdra.github.io/EnhancedEChest/)**
+📖 **[Read the full documentation →](https://openvdra.github.io/EnhancedEchest/)**
 
 </div>
 
@@ -34,13 +34,13 @@ A Paper plugin that gives every player larger, multi-chest ender storage backed 
 
 ## Quick Start
 
-1. Download the latest `.jar` from [Releases](https://github.com/OpenVdra/EnhancedEChest/releases) or [Modrinth](https://modrinth.com/plugin/enhancedechest).
+1. Download the latest `.jar` from [Releases](https://github.com/OpenVdra/EnhancedEchest/releases) or [Modrinth](https://modrinth.com/plugin/enhancedechest).
 2. Drop it into your server's `plugins/` folder.
 3. Restart the server. It runs on SQLite out of the box.
 
 Players can open their ender chest by right-clicking an ender chest block straight away — no permission needed. To let them open it by command (`/enderchest`, `/eclist`), grant `enhancedechest.command.open`.
 
-Full setup, commands, permissions, database, and migration guides are in the **[documentation](https://openvdra.github.io/EnhancedEChest/)**.
+Full setup, commands, permissions, database, and migration guides are in the **[documentation](https://openvdra.github.io/EnhancedEchest/)**.
 
 ## Credits
 

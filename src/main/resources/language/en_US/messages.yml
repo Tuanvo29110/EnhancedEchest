@@ -1,5 +1,5 @@
 # ============================================================================
-#  Chat messages for EnhancedEChest
+#  Chat messages for EnhancedEchest
 #  {prefix} is replaced with the value below. Lines are mostly plain white text;
 #  only dynamic values are written inline so messages read as full sentences.
 #  A line containing '<' is parsed as MiniMessage, otherwise as legacy '&' codes.

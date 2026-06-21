@@ -1,6 +1,6 @@
 # Database
 
-EnhancedEChest stores every ender chest's contents in a database. You choose the backend with the `database.type` option in `config.yml`.
+EnhancedEchest stores every ender chest's contents in a database. You choose the backend with the `database.type` option in `config.yml`.
 
 | Backend | `type` value | Best for |
 |---------|--------------|----------|
@@ -23,7 +23,7 @@ database:
   sqlite-file: enderchests.db
 ```
 
-The file is created at `plugins/EnhancedEChest/enderchests.db`. SQLite always uses a single connection, so `pool-size` is ignored in this mode.
+The file is created at `plugins/EnhancedEchest/enderchests.db`. SQLite always uses a single connection, so `pool-size` is ignored in this mode.
 
 ## MySQL / MariaDB
 
@@ -65,4 +65,4 @@ Because all data lives in the database, pointing several servers at the **same**
 
 ## Switching backends
 
-To move to a different backend, change `database.type` (and the connection fields) and restart the server. Note that EnhancedEChest does **not** automatically copy existing rows between backends — only the [vanilla migration](/docs/migration) import is automated.
+To move to a different backend, change `database.type` (and the connection fields) and restart the server. Note that EnhancedEchest does **not** automatically copy existing rows between backends — only the [vanilla migration](/docs/migration) import is automated.

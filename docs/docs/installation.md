@@ -2,7 +2,7 @@
 
 ## Requirements
 
-Before installing EnhancedEChest, make sure your server meets these requirements:
+Before installing EnhancedEchest, make sure your server meets these requirements:
 
 | Requirement | Specification |
 |-------------|---------------|
@@ -11,7 +11,7 @@ Before installing EnhancedEChest, make sure your server meets these requirements
 | **Java Version** | Java 21+ |
 
 ::: warning Paper is required
-EnhancedEChest relies on Paper-only APIs (the plugin bootstrap, Brigadier commands, and the Dialog API). It will **not** run on plain Spigot or CraftBukkit.
+EnhancedEchest relies on Paper-only APIs (the plugin bootstrap, Brigadier commands, and the Dialog API). It will **not** run on plain Spigot or CraftBukkit.
 :::
 
 ## Download
@@ -23,7 +23,7 @@ Choose your preferred download source:
     <img src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact/available/modrinth_vector.svg" alt="Modrinth" style="height: 24px;">
     Modrinth
   </a>
-  <a href="https://github.com/OpenVdra/EnhancedEChest/releases" target="_blank" rel="noreferrer" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; background: var(--vp-c-bg-soft); border: 1px solid var(--vp-c-border); border-radius: 8px; text-decoration: none; color: var(--vp-c-text-1); font-weight: 600;">
+  <a href="https://github.com/OpenVdra/EnhancedEchest/releases" target="_blank" rel="noreferrer" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; background: var(--vp-c-bg-soft); border: 1px solid var(--vp-c-border); border-radius: 8px; text-decoration: none; color: var(--vp-c-text-1); font-weight: 600;">
     🐙 GitHub Releases
   </a>
 </div>
@@ -49,11 +49,11 @@ Run the following in your server console or in-game to confirm the plugin loaded
 /plugins
 ```
 
-EnhancedEChest should appear in the list with a green status. By default it runs on **SQLite**, so it works out of the box with no further setup.
+EnhancedEchest should appear in the list with a green status. By default it runs on **SQLite**, so it works out of the box with no further setup.
 
 ### 3. Generated Files
 
-The plugin automatically creates its files in `plugins/EnhancedEChest/`:
+The plugin automatically creates its files in `plugins/EnhancedEchest/`:
 
 | File | Description |
 |------|-------------|
@@ -76,4 +76,4 @@ Your database and configuration are preserved across updates.
 If you run into issues:
 
 1. Check your **console logs** for error messages
-2. Report bugs on **[GitHub Issues](https://github.com/OpenVdra/EnhancedEChest/issues)**
+2. Report bugs on **[GitHub Issues](https://github.com/OpenVdra/EnhancedEchest/issues)**

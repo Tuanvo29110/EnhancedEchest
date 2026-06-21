@@ -1,4 +1,4 @@
-# EnhancedEChest — Claude guide
+# EnhancedEchest — Claude guide
 
 A Paper plugin that replaces the vanilla ender chest with a larger, multi-chest, database-backed
 storage system. Players get ender chests of up to **54 slots**, can own several, and manage them
@@ -13,7 +13,7 @@ For the full design, read [ARCHITECTURE.md](ARCHITECTURE.md). For user-facing do
 ./gradlew shadowJar    # build the relocated fat jar only
 ```
 
-- Output jar: `EnhancedEChest-<version>.jar`. `build.gradle.kts` also copies it to a local
+- Output jar: `EnhancedEchest-<version>.jar`. `build.gradle.kts` also copies it to a local
   `TestServer/plugins` directory (`shadowJar.destinationDirectory`) — adjust that path if your
   test server lives elsewhere.
 - There is no automated test suite yet; verification is done by running on a Paper/Folia server.
@@ -38,7 +38,7 @@ For the full design, read [ARCHITECTURE.md](ARCHITECTURE.md). For user-facing do
   dispatch storage calls onto the async executor. Don't call storage from a region/main thread.
 - **Dupe-safety is load-bearing** — do not "optimize" away the load-fresh-on-open / save-on-close /
   pending-save-wait model (see ARCHITECTURE.md). Encoding happens sync; only the DB write is async.
-- **Commands** are registered with Paper Brigadier in `EnhancedEChestBootstrap` (LifecycleEvents.COMMANDS),
+- **Commands** are registered with Paper Brigadier in `EnhancedEchestBootstrap` (LifecycleEvents.COMMANDS),
   not in `plugin.yml`. Permissions default to `op`.
 - **Messages:** `LanguageManager.parse()` auto-detects format per string — contains `<` → MiniMessage,
   otherwise legacy `&` codes (with `&#RRGGBB` hex). Default locale files use legacy `&` codes; the
@@ -49,5 +49,5 @@ For the full design, read [ARCHITECTURE.md](ARCHITECTURE.md). For user-facing do
 ## Docs site
 
 `docs/` is a VitePress site deployed to GitHub Pages by `.github/workflows/deploy-docs.yml`.
-`config.mts` sets `base: '/EnhancedEChest/'` for the project page — change it (and add `public/CNAME`)
+`config.mts` sets `base: '/EnhancedEchest/'` for the project page — change it (and add `public/CNAME`)
 if a custom domain is set up. Build locally with `cd docs && npm install && npm run docs:build`.

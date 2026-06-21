@@ -42,7 +42,7 @@ public final class UpdateChecker {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(MODRINTH_API))
                     .timeout(Duration.ofSeconds(10))
-                    .header("User-Agent", "EnhancedEChest/" + currentVersion + " (update-check)")
+                    .header("User-Agent", "EnhancedEchest/" + currentVersion + " (update-check)")
                     .GET()
                     .build();
 
@@ -63,7 +63,7 @@ public final class UpdateChecker {
     }
 
     private void printUpdateBanner() {
-        String sep = "——————————————[ EnhancedEChest ]——————————————";
+        String sep = "——————————————[ EnhancedEchest ]——————————————";
         log.warn("> {}", sep);
         log.warn(">");
         log.warn(">   UPDATE AVAILABLE!");

@@ -1,6 +1,6 @@
 package com.enhancedechest.command.admin;
 
-import com.enhancedechest.EnhancedEChestPlugin;
+import com.enhancedechest.EnhancedEchestPlugin;
 import com.enhancedechest.config.PluginConfig;
 import com.enhancedechest.gui.EnderChestService;
 import com.enhancedechest.lang.LanguageManager;
@@ -133,10 +133,10 @@ public final class ChestAdminCommand {
 
     private static Ctx resolve(CommandSourceStack source, String playerName) {
         CommandSender sender = source.getSender();
-        EnhancedEChestPlugin plugin =
-                (EnhancedEChestPlugin) Bukkit.getPluginManager().getPlugin("EnhancedEChest");
+        EnhancedEchestPlugin plugin =
+                (EnhancedEchestPlugin) Bukkit.getPluginManager().getPlugin("EnhancedEchest");
         if (plugin == null || !plugin.isEnabled()) {
-            sender.sendMessage(Component.text("[EnhancedEChest] Plugin is not available."));
+            sender.sendMessage(Component.text("[EnhancedEchest] Plugin is not available."));
             return null;
         }
         LanguageManager lang = plugin.getLanguageManager();
