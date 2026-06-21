@@ -18,6 +18,7 @@ public final class PostgresStorage extends AbstractSqlStorage {
                 last_updated   BIGINT       NOT NULL DEFAULT 0,
                 kind           SMALLINT     NOT NULL DEFAULT 0,
                 expires_at     BIGINT,
+                icon           VARCHAR(128),
                 PRIMARY KEY (player_uuid, chest_index)
             )
             """;

@@ -13,6 +13,9 @@ import org.jetbrains.annotations.Nullable;
  * @param kind       whether this is a normal or a temporary (overflow) chest
  * @param expiresAt  epoch millis when this chest expires, or null if it never expires
  *                   (drives the static "time remaining" snapshot shown in the dialog)
+ * @param icon       material key of the player-chosen icon (e.g. {@code minecraft:diamond}),
+ *                   or null for the default ender-chest icon; rendered next to the name in the
+ *                   list dialog as an Adventure sprite object component
  */
 public record ChestSummary(
         int index,
@@ -20,5 +23,6 @@ public record ChestSummary(
         @Nullable String customName,
         boolean primary,
         ChestKind kind,
-        @Nullable Long expiresAt
+        @Nullable Long expiresAt,
+        @Nullable String icon
 ) {}

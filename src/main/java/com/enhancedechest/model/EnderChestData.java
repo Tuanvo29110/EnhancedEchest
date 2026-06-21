@@ -14,6 +14,7 @@ import java.util.UUID;
  * @param containerData encoded inventory bytes, or null if the chest has never been saved
  * @param kind          whether this is a normal or a temporary (overflow) chest
  * @param expiresAt     epoch millis when this chest expires, or null if it never expires
+ * @param icon          material key of the player-chosen icon, or null for the default icon
  */
 public record EnderChestData(
         UUID owner,
@@ -22,5 +23,6 @@ public record EnderChestData(
         @Nullable String customName,
         @Nullable byte[] containerData,
         ChestKind kind,
-        @Nullable Long expiresAt
+        @Nullable Long expiresAt,
+        @Nullable String icon
 ) {}

@@ -48,6 +48,17 @@ public final class ChestDialogs {
     private static final int BUTTON_WIDTH = 180;
     private static final int BODY_WIDTH = 200;
 
+    // Icon picker grid: a fixed-size page so we only ever build ICON_PAGE_SIZE buttons per render,
+    // regardless of how many materials the server has. The first ICON_COLUMNS buttons form the control
+    // row (Search / Default / Prev / Next); the rest are the page's icons.
+    private static final int ICON_COLUMNS = 4;
+    private static final int ICON_PAGE_SIZE = 28; // 7 rows of ICON_COLUMNS
+    private static final int ICON_BUTTON_WIDTH = 150;
+    private static final int ICON_SEARCH_MAX_LENGTH = 48;
+
+    /** Key of the icon picker's search text input, read at click time to filter the catalog. */
+    private static final String ICON_SEARCH_INPUT = "icon_search";
+
     /** Key of the list dialog's edit-mode checkbox, read at click time to route chest buttons. */
     private static final String EDIT_MODE_INPUT = "edit_mode";
 
@@ -90,7 +101,7 @@ public final class ChestDialogs {
         List<ActionButton> buttons = new ArrayList<>(ordered.size());
         for (ChestSummary chest : ordered) {
             int index = chest.index();
-            Component label = lang.getChestLabel(index, chest.customName(), chest.kind());
+            Component label = withIcon(chest, lang.getChestLabel(index, chest.customName(), chest.kind()));
             if (chest.primary()) {
                 label = label.append(Component.text(" ")).append(lang.getGui("dialog.main-tag"));
             }
@@ -165,6 +176,20 @@ public final class ChestDialogs {
             buttons.add(ActionButton.create(lang.getGui("dialog.rename"), lang.getGui("dialog.rename-desc"), BUTTON_WIDTH,
                     DialogAction.staticAction(ClickEvent.showDialog(renameDialog(chest)))));
 
+            // Choose icon — forward, in-place to the (static) icon picker page 0 (no cursor reset).
+            buttons.add(ActionButton.create(lang.getGui("dialog.choose-icon"), lang.getGui("dialog.choose-icon-desc"),
+                    BUTTON_WIDTH, DialogAction.staticAction(ClickEvent.showDialog(iconPickerDialog(chest, "", 0)))));
+
+            // Clear icon — only meaningful once an icon is set; mutates, so re-query and re-push.
+            if (chest.icon() != null) {
+                buttons.add(ActionButton.create(lang.getGui("dialog.clear-icon"), lang.getGui("dialog.clear-icon-desc"),
+                        BUTTON_WIDTH, click((view, audience) -> {
+                            if (!(audience instanceof Player p)) return;
+                            service.setIconAsync(p.getUniqueId(), index, null)
+                                    .thenRun(() -> service.openDetailDialog(p, index));
+                        })));
+            }
+
             // Set as main / Unset main — mutates data, so it re-queries and is re-pushed from the server.
             if (canSetMain && !chest.primary()) {
                 buttons.add(ActionButton.create(lang.getGui("dialog.set-main"), lang.getGui("dialog.set-main-desc"),
@@ -189,12 +214,118 @@ public final class ChestDialogs {
                     if (audience instanceof Player p) service.openListDialog(p, true, sourceBlock);
                 })));
 
-        Component title = lang.getChestLabel(index, chest.customName(), chest.kind());
+        Component title = withIcon(chest, lang.getChestLabel(index, chest.customName(), chest.kind()));
         return Dialog.create(builder -> builder.empty()
                 .base(DialogBase.builder(title)
                         .body(List.of(chestIconBody(chest)))
                         .build())
                 .type(DialogType.multiAction(buttons, null, 1)));
+    }
+
+    /**
+     * Icon picker: a paged, searchable grid of every server material rendered with its in-game sprite
+     * (via {@link IconCatalog}). Only {@link #ICON_PAGE_SIZE} buttons are built per render, so the
+     * cost is independent of the catalog size. The control row (Search / Default / Prev / Next) is the
+     * first {@link #ICON_COLUMNS} buttons; Back is the dialog's exit action.
+     *
+     * <p>Search reads the text input and re-shows page 0 of the typed filter. Prev/Next navigate the
+     * <i>captured</i> filter's result set (clamped at the ends), so paging is predictable regardless of
+     * unsubmitted text. Picking an icon, or Default, writes the change and returns to the detail dialog.
+     *
+     * @param filter case-insensitive name filter this page was built for ("" = whole catalog)
+     * @param page   zero-based page index (clamped into range)
+     */
+    public Dialog iconPickerDialog(ChestSummary chest, String filter, int page) {
+        int index = chest.index();
+        List<IconCatalog.Entry> results = IconCatalog.search(filter);
+        int total = results.size();
+        int pageCount = Math.max(1, (total + ICON_PAGE_SIZE - 1) / ICON_PAGE_SIZE);
+        int clamped = Math.max(0, Math.min(page, pageCount - 1));
+        int from = clamped * ICON_PAGE_SIZE;
+        int to = Math.min(from + ICON_PAGE_SIZE, total);
+
+        List<ActionButton> buttons = new ArrayList<>(ICON_COLUMNS + (to - from));
+
+        // ---- control row (exactly ICON_COLUMNS buttons → one clean grid row) ----
+        // Search: re-show page 0 filtered by the freshly typed text.
+        buttons.add(ActionButton.create(lang.getGui("dialog.icon-search"), null, ICON_BUTTON_WIDTH,
+                click((view, audience) -> {
+                    if (!(audience instanceof Player p)) return;
+                    String typed = view.getText(ICON_SEARCH_INPUT);
+                    String query = typed == null ? "" : typed.trim();
+                    service.runForPlayer(p, () -> {
+                        if (p.isOnline()) p.showDialog(iconPickerDialog(chest, query, 0));
+                    });
+                })));
+        // Default: clear the icon back to the ender-chest default.
+        buttons.add(ActionButton.create(lang.getGui("dialog.icon-default"), lang.getGui("dialog.icon-default-desc"),
+                ICON_BUTTON_WIDTH, click((view, audience) -> {
+                    if (!(audience instanceof Player p)) return;
+                    service.setIconAsync(p.getUniqueId(), index, null)
+                            .thenRun(() -> service.openDetailDialog(p, index));
+                })));
+        // Prev / Next: navigate the captured filter's pages (clamp re-shows the same page at the ends).
+        int prevPage = clamped - 1;
+        int nextPage = clamped + 1;
+        buttons.add(ActionButton.create(lang.getGui("dialog.icon-prev"), null, ICON_BUTTON_WIDTH,
+                click((view, audience) -> {
+                    if (!(audience instanceof Player p)) return;
+                    service.runForPlayer(p, () -> {
+                        if (p.isOnline()) p.showDialog(iconPickerDialog(chest, filter, prevPage));
+                    });
+                })));
+        buttons.add(ActionButton.create(lang.getGui("dialog.icon-next"), null, ICON_BUTTON_WIDTH,
+                click((view, audience) -> {
+                    if (!(audience instanceof Player p)) return;
+                    service.runForPlayer(p, () -> {
+                        if (p.isOnline()) p.showDialog(iconPickerDialog(chest, filter, nextPage));
+                    });
+                })));
+
+        // ---- this page's icon buttons ----
+        for (int i = from; i < to; i++) {
+            IconCatalog.Entry entry = results.get(i);
+            Component label = entry.sprite().append(Component.text(" "))
+                    .append(Component.text(entry.displayName()));
+            buttons.add(ActionButton.create(label, null, ICON_BUTTON_WIDTH,
+                    click((view, audience) -> {
+                        if (!(audience instanceof Player p)) return;
+                        service.setIconAsync(p.getUniqueId(), index, entry.key())
+                                .thenRun(() -> service.openDetailDialog(p, index));
+                    })));
+        }
+
+        DialogInput search = DialogInput.text(ICON_SEARCH_INPUT, lang.getGui("dialog.icon-search-label"))
+                .initial(filter)
+                .maxLength(ICON_SEARCH_MAX_LENGTH)
+                .build();
+
+        Component body = lang.getGui("dialog.icon-body",
+                "page", Integer.toString(clamped + 1),
+                "pages", Integer.toString(pageCount),
+                "count", Integer.toString(total));
+
+        ActionButton back = ActionButton.create(lang.getGui("dialog.back"), null, ICON_BUTTON_WIDTH,
+                click((view, audience) -> {
+                    if (audience instanceof Player p) service.openDetailDialog(p, index);
+                }));
+
+        Component title = lang.getGui("dialog.icon-title");
+        return Dialog.create(builder -> builder.empty()
+                .base(DialogBase.builder(title)
+                        .body(List.of(DialogBody.plainMessage(body, BODY_WIDTH)))
+                        .inputs(List.of(search))
+                        .build())
+                .type(DialogType.multiAction(buttons, back, ICON_COLUMNS)));
+    }
+
+    /** Prepends the chest's chosen icon sprite (if any) to a label/title, separated by a space. */
+    private Component withIcon(ChestSummary chest, Component label) {
+        Component icon = IconCatalog.sprite(chest.icon());
+        if (icon == null) {
+            return label;
+        }
+        return icon.append(Component.text(" ")).append(label);
     }
 
     /** Dedicated rename dialog: a single text input plus Save / Cancel. */
@@ -241,7 +372,9 @@ public final class ChestDialogs {
         if (expiry != null) {
             info = info.appendNewline().append(expiry);
         }
-        return DialogBody.item(ItemStack.of(Material.ENDER_CHEST))
+        // Show the player's chosen icon as the real item model, falling back to the ender chest.
+        ItemStack icon = IconCatalog.item(chest.icon());
+        return DialogBody.item(icon != null ? icon : ItemStack.of(Material.ENDER_CHEST))
                 .description(DialogBody.plainMessage(info, BODY_WIDTH))
                 .showDecorations(false)
                 .showTooltip(false)

@@ -133,6 +133,7 @@ pool (pool size 1 for SQLite, configurable otherwise).
 | `last_updated` | write timestamp |
 | `kind` | `0` = NORMAL, `1` = TEMP (overflow chest) — see *Expiry & temporary chests* |
 | `expires_at` | nullable epoch-ms expiry; `NULL` = never. Indexed (`idx_enderchests_expires`) |
+| `icon` | nullable material key (e.g. `minecraft:diamond`) of the player-chosen list icon; `NULL` = default ender chest. Rendered as an Adventure sprite object component in the list/detail dialogs |
 
 Key operations: `createChest` (next index, **never** auto-primary; optional `expiresAt`
 for an expiring granted chest), `ensureChest` (create at a fixed index if absent — used by migration,

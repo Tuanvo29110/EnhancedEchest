@@ -423,6 +423,11 @@ public final class EnderChestService {
         return CompletableFuture.runAsync(() -> storage.renameChest(owner, index, name), asyncExecutor);
     }
 
+    /** Sets or clears a chest's icon (material key, or null to reset to the default icon). */
+    public CompletableFuture<Void> setIconAsync(UUID owner, int index, @Nullable String icon) {
+        return CompletableFuture.runAsync(() -> storage.setIcon(owner, index, icon), asyncExecutor);
+    }
+
     public CompletableFuture<Void> setPrimaryAsync(UUID owner, int index) {
         return CompletableFuture.runAsync(() -> storage.setPrimary(owner, index), asyncExecutor);
     }

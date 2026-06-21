@@ -104,6 +104,9 @@ public interface EnderChestStorage {
     /** Sets or clears a chest's custom display name (null resets to the default numbered title). */
     void renameChest(UUID owner, int index, @Nullable String name);
 
+    /** Sets or clears a chest's icon (material key, e.g. {@code minecraft:diamond}; null resets to default). */
+    void setIcon(UUID owner, int index, @Nullable String icon);
+
     /** Makes the given chest the player's primary, clearing the flag from all others. */
     void setPrimary(UUID owner, int index);
 

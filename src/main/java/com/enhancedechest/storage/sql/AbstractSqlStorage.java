@@ -23,7 +23,7 @@ import java.util.UUID;
 public abstract class AbstractSqlStorage implements EnderChestStorage {
 
     private static final String SQL_LIST =
-            "SELECT chest_index, size, custom_name, is_primary, kind, expires_at FROM enderchests " +
+            "SELECT chest_index, size, custom_name, is_primary, kind, expires_at, icon FROM enderchests " +
             "WHERE player_uuid = ? ORDER BY chest_index";
 
     // is_primary DESC puts the flagged chest first; otherwise the lowest index wins.
@@ -33,7 +33,7 @@ public abstract class AbstractSqlStorage implements EnderChestStorage {
             "ORDER BY is_primary DESC, chest_index ASC LIMIT 1";
 
     private static final String SQL_LOAD =
-            "SELECT size, custom_name, container_data, kind, expires_at FROM enderchests " +
+            "SELECT size, custom_name, container_data, kind, expires_at, icon FROM enderchests " +
             "WHERE player_uuid = ? AND chest_index = ?";
 
     private static final String SQL_SAVE =
@@ -79,6 +79,9 @@ public abstract class AbstractSqlStorage implements EnderChestStorage {
 
     private static final String SQL_RENAME =
             "UPDATE enderchests SET custom_name = ? WHERE player_uuid = ? AND chest_index = ?";
+
+    private static final String SQL_SET_ICON =
+            "UPDATE enderchests SET icon = ? WHERE player_uuid = ? AND chest_index = ?";
 
     private static final String SQL_CLEAR_PRIMARY =
             "UPDATE enderchests SET is_primary = 0 WHERE player_uuid = ?";
@@ -143,7 +146,8 @@ public abstract class AbstractSqlStorage implements EnderChestStorage {
                             rs.getString("custom_name"),
                             rs.getInt("is_primary") != 0,
                             ChestKind.fromCode(rs.getInt("kind")),
-                            getNullableLong(rs, "expires_at")));
+                            getNullableLong(rs, "expires_at"),
+                            rs.getString("icon")));
                 }
                 return result;
             }
@@ -180,7 +184,8 @@ public abstract class AbstractSqlStorage implements EnderChestStorage {
                         rs.getString("custom_name"),
                         rs.getBytes("container_data"),
                         ChestKind.fromCode(rs.getInt("kind")),
-                        getNullableLong(rs, "expires_at"));
+                        getNullableLong(rs, "expires_at"),
+                        rs.getString("icon"));
             }
         } catch (SQLException e) {
             throw new RuntimeException("Failed to load chest " + index + " for " + owner, e);
@@ -372,6 +377,20 @@ public abstract class AbstractSqlStorage implements EnderChestStorage {
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException("Failed to rename chest " + index + " for " + owner, e);
+        }
+    }
+
+    @Override
+    public void setIcon(UUID owner, int index, @Nullable String icon) {
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(SQL_SET_ICON)) {
+            if (icon == null) ps.setNull(1, Types.VARCHAR);
+            else ps.setString(1, icon);
+            ps.setString(2, owner.toString());
+            ps.setInt(3, index);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to set icon for chest " + index + " of " + owner, e);
         }
     }
 
