@@ -107,7 +107,15 @@ public final class ChestDialogs {
             buttons.add(ActionButton.create(label, listTooltip(chest), BUTTON_WIDTH,
                     click((view, audience) -> {
                         if (!(audience instanceof Player p)) return;
-                        if (Boolean.TRUE.equals(view.getBoolean(EDIT_MODE_INPUT))) {
+                        // The checkbox toggles client-side and is only readable here, on a click. This
+                        // is the one moment we can persist the player's choice — and only when it
+                        // actually differs from the state we seeded the dialog with, to avoid needless
+                        // writes when they never touched it.
+                        boolean editing = Boolean.TRUE.equals(view.getBoolean(EDIT_MODE_INPUT));
+                        if (editing != editInitial) {
+                            service.setEditModeAsync(p.getUniqueId(), editing);
+                        }
+                        if (editing) {
                             service.runForPlayer(p, () -> {
                                 if (p.isOnline()) p.showDialog(detailDialog(chest, canSetMain, sourceBlock));
                             });
@@ -117,11 +125,19 @@ public final class ChestDialogs {
                     })));
         }
 
-        // Dedicated close button (the dialog's exit action) — no action set means clicking it just
-        // dismisses the menu.
-        ActionButton close = ActionButton.builder(lang.getGui("dialog.close"))
-                .width(BUTTON_WIDTH)
-                .build();
+        // Dedicated close button (the dialog's exit action). It carries a click action purely to
+        // persist the edit-mode checkbox: closing is the common way to leave the list without ever
+        // clicking a chest, and the client-side checkbox is only readable on an action click — so
+        // without this, toggling edit mode then closing would never save. The exit action still
+        // dismisses the dialog afterwards. (Escape can't be captured, so it doesn't persist.)
+        ActionButton close = ActionButton.create(lang.getGui("dialog.close"), null, BUTTON_WIDTH,
+                click((view, audience) -> {
+                    if (!(audience instanceof Player p)) return;
+                    boolean editing = Boolean.TRUE.equals(view.getBoolean(EDIT_MODE_INPUT));
+                    if (editing != editInitial) {
+                        service.setEditModeAsync(p.getUniqueId(), editing);
+                    }
+                }));
 
         // In-dialog toggle: a checkbox the client flips locally, so switching modes never reopens the
         // dialog (and so never recentres the cursor). Rendered in the body, above the chest buttons.

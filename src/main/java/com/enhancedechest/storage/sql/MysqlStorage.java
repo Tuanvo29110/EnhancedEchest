@@ -23,8 +23,16 @@ public final class MysqlStorage extends AbstractSqlStorage {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             """;
 
+    private static final String INIT_SETTINGS_SQL = """
+            CREATE TABLE IF NOT EXISTS player_settings (
+                player_uuid VARCHAR(36) NOT NULL,
+                edit_mode   TINYINT(1)  NOT NULL DEFAULT 0,
+                PRIMARY KEY (player_uuid)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """;
+
     public MysqlStorage(PluginConfig config) {
-        super(buildConfig(config), INIT_SQL);
+        super(buildConfig(config), INIT_SQL, INIT_SETTINGS_SQL);
     }
 
     private static HikariConfig buildConfig(PluginConfig config) {

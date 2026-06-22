@@ -3,6 +3,7 @@ package com.enhancedechest.storage.sql;
 import com.enhancedechest.model.ChestKind;
 import com.enhancedechest.model.ChestSummary;
 import com.enhancedechest.model.EnderChestData;
+import com.enhancedechest.model.PlayerSettings;
 import com.enhancedechest.storage.EnderChestStorage;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -95,22 +96,36 @@ public abstract class AbstractSqlStorage implements EnderChestStorage {
     private static final String SQL_SET_MIGRATED =
             "UPDATE enderchests SET migrated = ? WHERE player_uuid = ? AND chest_index = 1";
 
+    // Per-player settings (one row per player). DML is portable; the CREATE is dialect-specific.
+    // Save is an UPDATE-else-INSERT upsert (avoids the per-dialect ON CONFLICT / ON DUPLICATE split).
+    private static final String SQL_SETTINGS_LOAD =
+            "SELECT edit_mode FROM player_settings WHERE player_uuid = ?";
+
+    private static final String SQL_SETTINGS_UPDATE =
+            "UPDATE player_settings SET edit_mode = ? WHERE player_uuid = ?";
+
+    private static final String SQL_SETTINGS_INSERT =
+            "INSERT INTO player_settings (player_uuid, edit_mode) VALUES (?, ?)";
+
     protected final HikariDataSource dataSource;
 
-    // Dialect-specific schema-creation SQL injected by subclasses to avoid calling abstract
-    // methods from the constructor (which would access uninitialized subclass state).
-    private final String sqlInit;
+    // Dialect-specific schema-creation statements injected by subclasses to avoid calling abstract
+    // methods from the constructor (which would access uninitialized subclass state). Each entry is
+    // one CREATE TABLE; they are executed in order on init().
+    private final String[] schemaStatements;
 
-    protected AbstractSqlStorage(HikariConfig config, String sqlInit) {
+    protected AbstractSqlStorage(HikariConfig config, String... schemaStatements) {
         this.dataSource = new HikariDataSource(config);
-        this.sqlInit = sqlInit;
+        this.schemaStatements = schemaStatements;
     }
 
     @Override
     public void init() {
         try (Connection conn = dataSource.getConnection();
              Statement stmt = conn.createStatement()) {
-            stmt.execute(sqlInit);
+            for (String ddl : schemaStatements) {
+                stmt.execute(ddl);
+            }
         } catch (SQLException e) {
             throw new RuntimeException("Failed to initialize database schema", e);
         }
@@ -453,6 +468,67 @@ public abstract class AbstractSqlStorage implements EnderChestStorage {
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException("Failed to update migrated flag for " + owner, e);
+        }
+    }
+
+    @Override
+    public PlayerSettings loadSettings(UUID owner) {
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(SQL_SETTINGS_LOAD)) {
+            ps.setString(1, owner.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return PlayerSettings.defaults();
+                return new PlayerSettings(rs.getInt("edit_mode") != 0);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to load settings for " + owner, e);
+        }
+    }
+
+    @Override
+    public void saveSettings(UUID owner, PlayerSettings settings) {
+        // Whole-object save. With a single column today this is exactly the edit-mode upsert; when
+        // more settings are added, extend this (and the SQL constants) to write every column.
+        upsertEditMode(owner, settings.editMode());
+    }
+
+    @Override
+    public void setEditMode(UUID owner, boolean editMode) {
+        upsertEditMode(owner, editMode);
+    }
+
+    /**
+     * Portable upsert of the edit_mode column: try UPDATE first, INSERT only when no row matched.
+     * Avoids the dialect-specific ON CONFLICT / ON DUPLICATE KEY syntax used by native upserts, and
+     * needs no preceding read. The UPDATE touches only edit_mode and the INSERT lists only it, so
+     * other (future) columns keep their value or fall back to their DB default.
+     */
+    private void upsertEditMode(UUID owner, boolean editMode) {
+        try (Connection conn = dataSource.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                int updated;
+                try (PreparedStatement ps = conn.prepareStatement(SQL_SETTINGS_UPDATE)) {
+                    ps.setInt(1, editMode ? 1 : 0);
+                    ps.setString(2, owner.toString());
+                    updated = ps.executeUpdate();
+                }
+                if (updated == 0) {
+                    try (PreparedStatement ps = conn.prepareStatement(SQL_SETTINGS_INSERT)) {
+                        ps.setString(1, owner.toString());
+                        ps.setInt(2, editMode ? 1 : 0);
+                        ps.executeUpdate();
+                    }
+                }
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to save settings for " + owner, e);
         }
     }
 

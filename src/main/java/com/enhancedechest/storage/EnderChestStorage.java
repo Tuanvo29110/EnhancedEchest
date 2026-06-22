@@ -2,6 +2,7 @@ package com.enhancedechest.storage;
 
 import com.enhancedechest.model.ChestSummary;
 import com.enhancedechest.model.EnderChestData;
+import com.enhancedechest.model.PlayerSettings;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -118,4 +119,20 @@ public interface EnderChestStorage {
 
     /** Updates the migrated flag on the player's chest #1. No-op if chest #1 does not exist. */
     void setMigrated(UUID owner, boolean migrated);
+
+    /**
+     * Loads the player's settings, or {@link PlayerSettings#defaults()} if they have no row yet.
+     * Never returns null — an absent row is indistinguishable from an all-defaults one.
+     */
+    PlayerSettings loadSettings(UUID owner);
+
+    /** Upserts the player's settings (whole object): updates the existing row, or inserts one if none exists. */
+    void saveSettings(UUID owner, PlayerSettings settings);
+
+    /**
+     * Targeted single-field upsert of just the edit-mode preference. Cheaper than
+     * {@link #loadSettings} + {@link #saveSettings} for a one-field toggle (no preceding read) and
+     * never clobbers other settings. Use {@link #saveSettings} when persisting the whole object.
+     */
+    void setEditMode(UUID owner, boolean editMode);
 }

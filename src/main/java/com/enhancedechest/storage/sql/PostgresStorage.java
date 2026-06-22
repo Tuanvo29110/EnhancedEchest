@@ -23,8 +23,16 @@ public final class PostgresStorage extends AbstractSqlStorage {
             )
             """;
 
+    private static final String INIT_SETTINGS_SQL = """
+            CREATE TABLE IF NOT EXISTS player_settings (
+                player_uuid VARCHAR(36) NOT NULL,
+                edit_mode   SMALLINT    NOT NULL DEFAULT 0,
+                PRIMARY KEY (player_uuid)
+            )
+            """;
+
     public PostgresStorage(PluginConfig config) {
-        super(buildConfig(config), INIT_SQL);
+        super(buildConfig(config), INIT_SQL, INIT_SETTINGS_SQL);
     }
 
     private static HikariConfig buildConfig(PluginConfig config) {

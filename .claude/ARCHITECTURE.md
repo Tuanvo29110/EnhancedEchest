@@ -114,8 +114,9 @@ failures abort the save (data is **not** written) to avoid corrupting stored byt
 exists for `(player_uuid, chest_index)`. There is no separate "owners" table.
 
 `AbstractSqlStorage` holds all DML as plain SQL valid across SQLite, MySQL/MariaDB, and PostgreSQL.
-Only the `CREATE TABLE` statement is dialect-specific and is injected by each subclass
-(`SqliteStorage`, `MysqlStorage`, `PostgresStorage`). New chest indexes are computed in Java
+Only the `CREATE TABLE` statements are dialect-specific and are injected by each subclass
+(`SqliteStorage`, `MysqlStorage`, `PostgresStorage`) as a `String...` of DDL run in order by `init()`
+(currently `enderchests` + `player_settings`). New chest indexes are computed in Java
 (`MAX(chest_index)+1`), so no dialect-specific upsert is required. Connections come from a HikariCP
 pool (pool size 1 for SQLite, configurable otherwise).
 
@@ -144,6 +145,45 @@ plus the item-moving `spillShrink` / `spillRemove` and the sweeper query `findEx
 **UPDATE-only** and never touches size, name, or primary. Primary resolution (`SQL_PRIMARY`) filters
 `kind = 0` and orders `is_primary DESC, chest_index ASC`, so it returns the flagged main when one exists
 and otherwise the lowest-indexed NORMAL chest; temp chests are never primary.
+
+### Schema (`player_settings`)
+
+Per-player UI/behaviour preferences, **one row per player** (`player_uuid` PK), separate from
+`enderchests` because they are per-player, not per-chest. Wide table with one typed column per
+setting (not EAV/JSON) — fast, type-safe, DB-level defaults; adding a setting is a new column +
+a portable `ALTER TABLE ... ADD COLUMN ... DEFAULT`.
+
+| Column | Notes |
+|--------|-------|
+| `player_uuid` | PK |
+| `edit_mode` | bool (0/1, default 0) — remembers whether `/eclist` opens in edit mode across sessions |
+
+Mapped to the `PlayerSettings` record (loaded/saved **whole**, never null — an absent row reads as
+`PlayerSettings.defaults()`). `saveSettings` (whole object) and `setEditMode` (single targeted field,
+no preceding read) are both **portable upserts**: `UPDATE`, and `INSERT` only when no row matched —
+deliberately avoiding the per-dialect `ON CONFLICT` (SQLite/PG) vs `ON DUPLICATE KEY` (MySQL) split,
+keeping with the "all DML portable, only DDL per-dialect" rule. **To add a setting:** add a component
+to `PlayerSettings`, a column to all three DDLs, and a mapping in `loadSettings`/`saveSettings`.
+
+**Write-through read cache (`EnderChestService.settingsCache`):** settings are read on every dialog
+open, so they are cached in RAM keyed by UUID. `PlayerSettingsListener` preloads on join and evicts on
+quit, so the map is **bounded by the online-player count**. `loadSettingsAsync` serves from the cache
+(a miss — preload in flight, or already-online-at-load — falls back to a one-off DB read that is *not*
+cached, keeping `preloadSettings` the sole inserter). `setEditModeAsync` is **write-through**: it
+updates the cached copy in place (`computeIfPresent`, never inserts) and writes the DB immediately, so
+the cache never holds dirty state and needs no shutdown flush. **Leak-free invariant:** every entry is
+added by a join preload and removed by the matching quit eviction; the join-then-immediate-quit race is
+closed by a post-load online re-check in `preloadSettings` that drops an entry whose player already
+left. `onEnable` preloads already-online players (a `/reload` fires no join event for them).
+
+**Edit-mode persistence flow:** the edit-mode checkbox is a client-side `DialogInput.bool` that
+never notifies the server on toggle — its value is only readable when a button carrying an action is
+clicked. So the preference is saved on **any** action click that leaves the list — a chest button
+*or* the Close button — and only when it differs from the seeded state, to avoid needless writes.
+Fresh list opens (`/eclist` and the routing dialog in `open`) seed the checkbox from the saved value.
+The detail-dialog Back path still forces edit-mode on — that is navigation, not preference. One gap is
+unavoidable: closing with **Escape** fires no callback in the Dialog API, so a toggle followed by
+Escape does not persist.
 
 ## Serialization
 

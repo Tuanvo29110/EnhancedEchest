@@ -5,6 +5,7 @@ import com.enhancedechest.lang.LanguageManager;
 import com.enhancedechest.model.ChestKind;
 import com.enhancedechest.model.ChestSummary;
 import com.enhancedechest.model.EnderChestData;
+import com.enhancedechest.model.PlayerSettings;
 import com.enhancedechest.serialization.CodecException;
 import com.enhancedechest.serialization.ContainerCodec;
 import com.enhancedechest.storage.EnderChestStorage;
@@ -72,6 +73,13 @@ public final class EnderChestService {
 
     private final ConcurrentHashMap<SaveKey, CompletableFuture<Void>> pendingSaves =
             new ConcurrentHashMap<>();
+
+    // Write-through read cache of per-player settings, keyed by UUID. Populated on join
+    // (preloadSettings), read by the dialog-open paths, updated in place on change, and evicted on
+    // quit (evictSettings) — so it is bounded by the online-player count. Writes go straight to the DB
+    // (write-through), so the cache holds no dirty state and needs no shutdown flush. See the leak-free
+    // invariant documented on preloadSettings.
+    private final ConcurrentHashMap<UUID, PlayerSettings> settingsCache = new ConcurrentHashMap<>();
 
     private final ExecutorService asyncExecutor = Executors.newCachedThreadPool(r -> {
         Thread t = new Thread(r, "EnhancedEchest-db");
@@ -154,9 +162,12 @@ public final class EnderChestService {
                         if (mainIndex != null) {
                             openChest(player, mainIndex, sourceBlock);
                         } else {
-                            foliaLib.getScheduler().runAtEntity(player, task -> {
-                                if (player.isOnline()) player.showDialog(dialogs.listDialog(chests, canSetMain, sourceBlock, false));
-                            });
+                            // Seed the edit-mode checkbox from the player's saved preference.
+                            loadSettingsAsync(uuid).thenAccept(settings ->
+                                    foliaLib.getScheduler().runAtEntity(player, task -> {
+                                        if (player.isOnline()) player.showDialog(
+                                                dialogs.listDialog(chests, canSetMain, sourceBlock, settings.editMode()));
+                                    }));
                         }
                     })
                     .exceptionally(e -> reportOpenFailure(player, e));
@@ -299,15 +310,18 @@ public final class EnderChestService {
 
     // ---- management dialog ----
 
-    /** Loads the player's chests and shows the /eclist management dialog (edit mode off). */
+    /** Loads the player's chests and shows the /eclist management dialog, seeding edit mode from their saved preference. */
     public void openListDialog(Player player) {
-        openListDialog(player, false, null);
+        loadSettingsAsync(player.getUniqueId())
+                .thenAccept(settings -> openListDialog(player, settings.editMode(), null))
+                .exceptionally(e -> reportOpenFailure(player, e));
     }
 
     /**
      * Loads the player's chests and shows the management dialog with the edit-mode checkbox in the
-     * given starting state. A fresh open seeds it off; returning from a detail dialog's Back seeds it
-     * on so the player stays in edit mode. The checkbox itself toggles client-side without re-showing.
+     * given starting state. Fresh opens seed it from the player's saved preference (see the no-arg
+     * overload and {@link #open}); returning from a detail dialog's Back seeds it on so the player
+     * stays in edit mode. The checkbox itself toggles client-side without re-showing.
      *
      * @param editInitial starting state of the dialog's edit-mode checkbox
      * @param sourceBlock ender chest block this menu was opened from (threaded through so direct opens
@@ -445,6 +459,57 @@ public final class EnderChestService {
 
     public CompletableFuture<Void> clearPrimaryAsync(UUID owner) {
         return CompletableFuture.runAsync(() -> storage.clearPrimary(owner), asyncExecutor);
+    }
+
+    /**
+     * Loads a player's settings into the cache on join. This is the cache's <b>only</b> inserter,
+     * which keeps the leak-free invariant simple: every entry added here is removed by
+     * {@link #evictSettings} on quit. The post-load online re-check covers the join-then-immediate-quit
+     * race — if the player already left while the load was in flight (so {@code evictSettings} ran
+     * before this put), the entry is dropped right after it is added, so nothing is ever orphaned.
+     */
+    public void preloadSettings(UUID owner) {
+        CompletableFuture.supplyAsync(() -> storage.loadSettings(owner), asyncExecutor)
+                .thenAccept(settings -> {
+                    settingsCache.put(owner, settings);
+                    if (Bukkit.getPlayer(owner) == null) {
+                        settingsCache.remove(owner);
+                    }
+                })
+                .exceptionally(e -> {
+                    logger.error("Failed to preload settings for {}", owner, e.getCause() != null ? e.getCause() : e);
+                    return null;
+                });
+    }
+
+    /** Evicts a player's cached settings on quit. Paired with {@link #preloadSettings} so the cache stays bounded by online players. */
+    public void evictSettings(UUID owner) {
+        settingsCache.remove(owner);
+    }
+
+    /**
+     * Returns the player's settings, served from the cache when present (the common case for an online
+     * player). A miss — preload still in flight, or the player was already online before the plugin
+     * loaded — falls back to a one-off DB read that is deliberately <b>not</b> cached, so
+     * {@link #preloadSettings} remains the sole inserter and the leak-free invariant holds.
+     */
+    public CompletableFuture<PlayerSettings> loadSettingsAsync(UUID owner) {
+        PlayerSettings cached = settingsCache.get(owner);
+        if (cached != null) {
+            return CompletableFuture.completedFuture(cached);
+        }
+        return CompletableFuture.supplyAsync(() -> storage.loadSettings(owner), asyncExecutor);
+    }
+
+    /**
+     * Persists the player's edit-mode preference with a single targeted upsert (no preceding read),
+     * leaving every other setting untouched. Write-through: the cached copy is updated in place first
+     * (if present) so the next dialog open reflects the change without a DB read, then the DB is
+     * written. Uses {@code computeIfPresent} so it never inserts — preserving the leak-free invariant.
+     */
+    public CompletableFuture<Void> setEditModeAsync(UUID owner, boolean editMode) {
+        settingsCache.computeIfPresent(owner, (k, s) -> s.withEditMode(editMode));
+        return CompletableFuture.runAsync(() -> storage.setEditMode(owner, editMode), asyncExecutor);
     }
 
     /** Runs the given action on the player's entity thread (helper for command/dialog callbacks). */
@@ -650,6 +715,9 @@ public final class EnderChestService {
 
     public void shutdown() {
         flushPendingSaves();
+        // Write-through cache holds no dirty state (every change was persisted immediately), so there
+        // is nothing to flush — just drop the references.
+        settingsCache.clear();
         asyncExecutor.shutdown();
         try {
             if (!asyncExecutor.awaitTermination(10, TimeUnit.SECONDS)) {

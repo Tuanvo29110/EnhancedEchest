@@ -23,8 +23,16 @@ public final class SqliteStorage extends AbstractSqlStorage {
             )
             """;
 
+    private static final String INIT_SETTINGS_SQL = """
+            CREATE TABLE IF NOT EXISTS player_settings (
+                player_uuid TEXT    NOT NULL,
+                edit_mode   INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY (player_uuid)
+            )
+            """;
+
     public SqliteStorage(Path dataFolder, String fileName) {
-        super(buildConfig(dataFolder, fileName), INIT_SQL);
+        super(buildConfig(dataFolder, fileName), INIT_SQL, INIT_SETTINGS_SQL);
     }
 
     private static HikariConfig buildConfig(Path dataFolder, String fileName) {
