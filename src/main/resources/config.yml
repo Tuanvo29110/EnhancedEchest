@@ -1,6 +1,8 @@
 # EnhancedEchest configuration
 
 # Language locale to load from language/<locale>/
+# Bundled locales: en_US (English), vi_VN (Tiếng Việt).
+# Add your own by copying a folder under language/ and translating it.
 language: en_US
 
 enderchest:

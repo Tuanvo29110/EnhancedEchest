@@ -3,17 +3,17 @@
 
 enderchest:
   # Tiêu đề cửa sổ kho đồ. {index} = số thứ tự rương.
-  title: 'Rương Ẩn'
-  title-numbered: 'Rương Ẩn {index}'
-  title-temp: '<red>⚠ <reset>Kho Tạm'
+  title: 'Rương Ender'
+  title-numbered: 'Rương Ender {index}'
+  title-temp: '<red>⚠ <reset>Rương Tạm'
 
 dialog:
 
   # ===== Hộp thoại danh sách (mỗi rương sở hữu là một nút) =====
-  list-title: '<white>Các Rương Ẩn Của Bạn'
-  list-body: '<white>Chọn một rương để mở hoặc quản lý.'
-  # Khi được tích, bấm vào rương sẽ mở menu quản lý; khi bỏ tích (mặc định), mở rương trực tiếp.
-  edit-mode: '<white>Chế độ quản lý (bấm để quản lý rương)'
+  list-title: '<white>Các Rương Ender Của Bạn'
+  list-body: '<white>Chọn một rương để mở hoặc chỉnh sửa.'
+  # Khi được tích, bấm vào rương sẽ mở menu chỉnh sửa; khi bỏ tích (mặc định), mở rương trực tiếp.
+  edit-mode: '<white>Chế độ chỉnh sửa (bấm để chỉnh sửa rương)'
   close: '<red>✖ <white>Đóng'
   # Chú thích khi rê chuột lên mỗi nút rương. {size} = số ô.
   slots: '<white>{size} ô'
@@ -24,7 +24,7 @@ dialog:
 
   # ===== Danh sách xem của quản trị viên (/ee view <player> [list]) =====
   # {player} = chủ rương đang được xem.
-  admin-list-title: '<white>Các Rương Ẩn Của {player}'
+  admin-list-title: '<white>Các Rương Ender Của {player}'
   admin-list-body: '<white>Chọn một rương để xem.'
 
   # ===== Hộp thoại chi tiết (một rương duy nhất) =====
@@ -33,9 +33,9 @@ dialog:
   open: '<white>Mở'
   open-desc: '<white>Mở rương này.'
   set-main: '<gold>★ <white>Đặt làm rương chính'
-  set-main-desc: '<white>Đặt đây làm rương được mở bằng /ec và khi chuột phải vào khối rương ẩn.'
+  set-main-desc: '<white>Đặt đây làm rương được mở bằng /ec và khi chuột phải vào khối rương ender.'
   unset-main: '<gray>☆ <white>Bỏ rương chính'
-  unset-main-desc: '<white>Ngừng dùng rương này làm rương chính. /ec sẽ mở lại menu quản lý.'
+  unset-main-desc: '<white>Ngừng dùng rương này làm rương chính. /ec sẽ mở lại menu chỉnh sửa.'
   rename: '<white>Đổi tên'
   rename-desc: '<white>Đặt tên hiển thị tùy chỉnh cho rương này.'
   choose-icon: '<white>Chọn biểu tượng'
@@ -56,4 +56,4 @@ dialog:
   icon-search-label: '<white>Tìm'
   icon-search: '<white>Tìm'
   icon-default: '<white>Mặc định'
-  icon-default-desc: '<white>Dùng biểu tượng rương ẩn mặc định.'
+  icon-default-desc: '<white>Dùng biểu tượng rương ender mặc định.'
