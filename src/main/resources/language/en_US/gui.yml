@@ -22,6 +22,11 @@ dialog:
   # Static "time remaining" snapshot on chests that expire. {time} e.g. "23h 45m".
   expires-in: '<white>Expires in {time}'
 
+  # ===== Admin view list (/ee view <player> [list]) =====
+  # {player} = the owner whose chests are being viewed.
+  admin-list-title: '<white>{player}''s Ender Chests'
+  admin-list-body: '<white>Select a chest to view.'
+
   # ===== Detail dialog (a single chest) =====
   # Centred text under the title. {size} = slot count.
   detail-body: '<white>{size} slots'

@@ -35,7 +35,15 @@ Use <code>/ee resize &lt;player&gt; &lt;index&gt; &lt;size&gt;</code> to change 
 </PermRow>
 
 <PermRow permission="enhancedechest.admin.delete" defaultVal="op">
-Use <code>/ee delete &lt;player&gt; &lt;index&gt; [force]</code> to delete a chest (spilling its items, or hard-deleting with <code>force</code>).
+Use <code>/ee delete &lt;player&gt; &lt;count&gt; [force]</code> to delete the newest chests (spilling their items, or hard-deleting with <code>force</code>); the player's first chest is always kept.
+</PermRow>
+
+<PermRow permission="enhancedechest.admin.view" defaultVal="op">
+Use <code>/ee view &lt;player&gt; [index]</code> to open another player's chest. <strong>Read-only</strong> on its own — you can see the contents but not move items.
+</PermRow>
+
+<PermRow permission="enhancedechest.admin.edit" defaultVal="op">
+Granted <em>on top of</em> <code>enhancedechest.admin.view</code>, lets you <strong>take and add</strong> items while viewing another player's chest. Without it, <code>/ee view</code> is look-only.
 </PermRow>
 
 <PermRow permission="enhancedechest.admin.reload" defaultVal="op">

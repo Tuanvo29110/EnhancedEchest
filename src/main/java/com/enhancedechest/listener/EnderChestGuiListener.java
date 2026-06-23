@@ -1,7 +1,6 @@
 package com.enhancedechest.listener;
 
 import com.enhancedechest.config.PluginConfig;
-import com.enhancedechest.gui.EnderChestAnimator;
 import com.enhancedechest.gui.EnderChestHolder;
 import com.enhancedechest.gui.EnderChestService;
 import com.enhancedechest.lang.LanguageManager;
@@ -9,7 +8,7 @@ import com.enhancedechest.model.ChestKind;
 import com.tcoded.folialib.FoliaLib;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.sound.Sound;
-import org.bukkit.Location;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -18,7 +17,6 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 
 import java.util.Map;
 import java.util.UUID;
@@ -27,10 +25,15 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public final class EnderChestGuiListener implements Listener {
 
+    /** Permission an admin needs to <i>modify</i> (not just view) another player's chest. */
+    private static final String ADMIN_EDIT_PERMISSION = "enhancedechest.admin.edit";
+
     /** Minimum gap between deny sounds per player, so spam-clicking can't machine-gun the sound. */
     private static final long DENY_SOUND_COOLDOWN_MILLIS = 350L;
 
+    @SuppressWarnings("unused") // kept for constructor wiring; no longer needed since detach handles animation
     private final EnderChestService service;
+    @SuppressWarnings("unused")
     private final FoliaLib foliaLib;
     private final LanguageManager lang;
     private final PluginConfig config;
@@ -38,23 +41,50 @@ public final class EnderChestGuiListener implements Listener {
     /** Last time (ms) each player heard the deny sound; cleared on chest close. */
     private final Map<UUID, Long> lastDenySoundAt = new ConcurrentHashMap<>();
 
+    // Wiring note: 'service' and 'foliaLib' are still injected by the plugin; service is used by onClose,
+    // foliaLib is retained so the constructor signature stays stable.
+
     /**
-     * Temporary chests are take-only: items may be removed but never added. Cancels any click that
-     * would deposit into the temp (top) inventory — placing from the cursor, swapping, hotbar swaps,
-     * and shift-clicking from the player inventory — while leaving pickups and shift-clicks out of the
-     * temp chest untouched.
+     * Guards item moves on an open chest GUI:
+     * <ol>
+     *   <li><b>Read-only viewers</b> — an admin viewing someone else's chest without the edit permission
+     *       — cannot change the shared contents at all; any action touching the top inventory is cancelled
+     *       (they still see live updates).</li>
+     *   <li><b>Temporary chests</b> are take-only for everyone: deposits into the top inventory are
+     *       cancelled, take-outs left untouched.</li>
+     * </ol>
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onClick(InventoryClickEvent event) {
         if (!(event.getView().getTopInventory().getHolder() instanceof EnderChestHolder holder)) return;
-        if (holder.getKind() != ChestKind.TEMP) return;
+        HumanEntity who = event.getWhoClicked();
 
-        Inventory top = event.getView().getTopInventory();
-        boolean deposit = isDeposit(event, top);
-        if (deposit) {
-            event.setCancelled(true);
-            notifyTakeOnly(event.getWhoClicked());
+        if (isReadOnlyViewer(who, holder)) {
+            if (touchesTop(event)) {
+                event.setCancelled(true);
+                notifyViewOnly(who);
+            }
+            return;
         }
+
+        if (holder.getKind() != ChestKind.TEMP) return;
+        if (isDeposit(event, event.getView().getTopInventory())) {
+            event.setCancelled(true);
+            notifyTakeOnly(who);
+        }
+    }
+
+    /** True if the click's action would modify the top (shared chest) inventory. */
+    private static boolean touchesTop(InventoryClickEvent event) {
+        Inventory top = event.getView().getTopInventory();
+        Inventory clicked = event.getClickedInventory();
+        return switch (event.getAction()) {
+            case NOTHING -> false;
+            // Shift-click and double-click-collect cross the boundary regardless of which side was clicked.
+            case MOVE_TO_OTHER_INVENTORY, COLLECT_TO_CURSOR -> true;
+            // All other actions only affect the top if the click landed inside it.
+            default -> clicked != null && clicked.equals(top);
+        };
     }
 
     private static boolean isDeposit(InventoryClickEvent event, Inventory top) {
@@ -69,23 +99,43 @@ public final class EnderChestGuiListener implements Listener {
         };
     }
 
-    /** Cancels any drag that would spread items into the temp (top) inventory slots. */
+    /**
+     * Cancels any drag that would spread items into the top inventory slots — rejected outright for a
+     * read-only viewer, and for everyone on a temporary (take-only) chest.
+     */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onDrag(InventoryDragEvent event) {
         if (!(event.getView().getTopInventory().getHolder() instanceof EnderChestHolder holder)) return;
-        if (holder.getKind() != ChestKind.TEMP) return;
 
         int topSize = event.getView().getTopInventory().getSize();
-        for (int rawSlot : event.getRawSlots()) {
-            if (rawSlot < topSize) { // a raw slot below topSize belongs to the top inventory
-                event.setCancelled(true);
-                notifyTakeOnly(event.getWhoClicked());
-                return;
-            }
+        boolean intoTop = event.getRawSlots().stream().anyMatch(rawSlot -> rawSlot < topSize);
+        if (!intoTop) return; // a drag confined to the player inventory is always fine
+
+        HumanEntity who = event.getWhoClicked();
+        if (isReadOnlyViewer(who, holder)) {
+            event.setCancelled(true);
+            notifyViewOnly(who);
+            return;
+        }
+        if (holder.getKind() == ChestKind.TEMP) {
+            event.setCancelled(true);
+            notifyTakeOnly(who);
         }
     }
 
-    private void notifyTakeOnly(org.bukkit.entity.HumanEntity who) {
+    /** A non-owner viewing the chest without the edit permission may look but not touch. */
+    private static boolean isReadOnlyViewer(HumanEntity who, EnderChestHolder holder) {
+        return !who.getUniqueId().equals(holder.getOwner())
+                && !who.hasPermission(ADMIN_EDIT_PERMISSION);
+    }
+
+    private void notifyViewOnly(HumanEntity who) {
+        if (who instanceof Player p) {
+            p.sendActionBar(lang.get("chest.view-only"));
+        }
+    }
+
+    private void notifyTakeOnly(HumanEntity who) {
         if (who instanceof Player p) {
             p.sendActionBar(lang.get("chest.temp-take-only"));
             Sound sound = config.getTempDenySound();
@@ -107,31 +157,17 @@ public final class EnderChestGuiListener implements Listener {
     }
 
     /**
-     * Saves inventory contents to DB on every close, regardless of close reason.
-     * This fires for normal closes, /ec reopens (reason OPEN_NEW), and forced closes
-     * from server-side events. The DB write is always correct because:
-     * - On reopen via /ec: save fires here first, then EnderChestService.open() waits
-     *   for the pending save before loading the fresh snapshot. No stale state.
-     * - On quit: PlayerQuitListener fires save independently; both are idempotent.
-     *
-     * Close animation: dispatched to the block's region thread via runAtLocation so
-     * the NMS call is always on the correct thread (required for Folia).
+     * Detaches the closing player from the shared session on every close, regardless of reason. The
+     * service removes them as a viewer and, only when the <i>last</i> viewer leaves, persists the shared
+     * contents — so concurrent viewers keep editing the one live inventory with no premature save and no
+     * dupe. The close (lid) animation is played from {@code detach} using the per-viewer source block.
      */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onClose(InventoryCloseEvent event) {
         Inventory top = event.getView().getTopInventory();
-        InventoryHolder holder = top.getHolder();
-        if (!(holder instanceof EnderChestHolder ecHolder)) return;
+        if (!(top.getHolder() instanceof EnderChestHolder ecHolder)) return;
 
         lastDenySoundAt.remove(event.getPlayer().getUniqueId());
-
-        service.save(ecHolder, top);
-
-        Location sourceBlock = ecHolder.getSourceBlock();
-        if (sourceBlock != null) {
-            Player player = (Player) event.getPlayer();
-            foliaLib.getScheduler().runAtLocation(sourceBlock, task ->
-                    EnderChestAnimator.close(player, sourceBlock));
-        }
+        service.detach((Player) event.getPlayer(), ecHolder);
     }
 }

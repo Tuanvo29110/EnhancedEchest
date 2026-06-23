@@ -11,7 +11,7 @@ Before installing EnhancedEchest, make sure your server meets these requirements
 | **Java Version** | Java 25 |
 
 ::: warning Paper 26.1.x is required
-EnhancedEchest relies on Paper-only APIs (the plugin bootstrap, Brigadier commands, and the Dialog API) and is built against the **26.1.x** API. It will **not** run on plain Spigot or CraftBukkit, nor on other Minecraft versions.
+EnhancedEchest relies on Paper-only APIs (the plugin bootstrap, Brigadier commands, and the Dialog API) and is built against the **26.1.x** API. It requires Paper or a Paper-compatible fork (Folia, Purpur); it will **not** run on CraftBukkit, nor on other Minecraft versions.
 :::
 
 ::: warning Java 25 is required

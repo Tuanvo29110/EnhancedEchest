@@ -23,7 +23,8 @@ For the full design, read [ARCHITECTURE.md](ARCHITECTURE.md). For user-facing do
 - **Java 25**, **Paper API 26.1.2** (`paper-api:26.1.2.build.72-stable`; api-version `26.1.2`),
   Gradle Kotlin DSL, ShadowJar.
 - Paper-only APIs are used (`paper-plugin.yml` bootstrapper, Brigadier commands, Dialog API) —
-  the plugin does **not** run on plain Spigot/CraftBukkit.
+  the plugin requires **Paper** (or a Paper-compatible fork such as Purpur / Folia) and does not run
+  on CraftBukkit.
 - All third-party libs are **shaded and relocated** under `com.enhancedechest.libs.*`
   (HikariCP, MariaDB driver, PostgreSQL driver, FoliaLib). SQLite driver is `compileOnly`
   (Paper bundles it). Never reference these libs by their original package in new code without
@@ -32,13 +33,16 @@ For the full design, read [ARCHITECTURE.md](ARCHITECTURE.md). For user-facing do
 
 ## Conventions
 
-- **Threading / Folia:** all scheduling goes through `FoliaLib` so the jar runs on Spigot/Paper/Folia.
+- **Threading / Folia:** all scheduling goes through `FoliaLib` so the jar runs on Paper/Folia.
   `runAsync` / `runAtEntity` / `runAtLocation` take a `Consumer<WrappedTask>`, **not** a `Runnable`;
   the `*Later` variants have `Runnable` overloads. Never touch entities/blocks off their region thread.
 - **DB access is synchronous** in the storage layer; `EnderChestService` is the only place allowed to
   dispatch storage calls onto the async executor. Don't call storage from a region/main thread.
-- **Dupe-safety is load-bearing** — do not "optimize" away the load-fresh-on-open / save-on-close /
-  pending-save-wait model (see ARCHITECTURE.md). Encoding happens sync; only the DB write is async.
+- **Dupe-safety is load-bearing** — do not "optimize" away the model: one **shared `Inventory` per open
+  chest** (so concurrent viewers can't dupe), load-fresh on first open, save on **last** viewer close,
+  pending-save-wait on reopen. All open paths must funnel through `openShared`; session bookkeeping is
+  single-threaded via `onGlobal`. Encoding happens sync; only the DB write is async. Full detail:
+  [architecture/concurrency-and-dupe-safety.md](architecture/concurrency-and-dupe-safety.md).
 - **Commands** are registered with Paper Brigadier in `EnhancedEchestBootstrap` (LifecycleEvents.COMMANDS),
   not in `plugin.yml`. Permissions default to `op`.
 - **Messages:** `LanguageManager.parse()` auto-detects format per string — contains `<` → MiniMessage,

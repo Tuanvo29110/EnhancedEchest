@@ -19,9 +19,14 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,19 +36,37 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
- * Owns the open and save lifecycle of the custom ender chest GUIs, now multi-chest.
+ * Owns the open and save lifecycle of the custom ender chest GUIs, now multi-chest and
+ * <b>multi-viewer</b>: a player and an admin (or two admins) can have the same chest open at once.
  *
  * <p>/enderchest and right-click open a single chest directly (auto-creating chest #1 if the player
  * owns none). With 2+ chests they open the chosen main directly if one is set (and the player may use
  * it), otherwise the management dialog. /eclist always opens the management dialog. A main is never
  * auto-assigned — it is set only via the dialog's "Set as main" action.
  *
- * <p>Dupe-safety contract (unchanged in spirit, now per chest index):
+ * <h2>Shared live inventory (concurrent-edit) model</h2>
+ * Every open chest is backed by a single shared {@link Inventory} held in {@link #sessions}, keyed by
+ * (owner, index). Owner and admin {@code openInventory()} the <i>same</i> object, so Bukkit serialises
+ * all item moves on one {@code ItemStack[]} — making item-level duping between concurrent viewers
+ * structurally impossible on a single-threaded platform.
+ *
+ * <p><b>Folia caveat:</b> two viewers may live on different region threads, where a shared inventory is
+ * unsafe. On Folia we therefore allow only <b>one</b> live viewer per chest (a second opener is denied);
+ * on Paper concurrent editing is fully supported.
+ *
+ * <p>All session bookkeeping (the {@link #sessions} map, viewer sets, attach/detach/persist decisions)
+ * runs on a single thread via {@link #onGlobal}: the main thread on Paper, the global region thread on
+ * Folia. This removes registry-level races on both. The actual DB read/write stays async; encoding is
+ * synchronous and only ever happens once all viewers have closed (no concurrent edit during encode).
+ *
+ * <p>Dupe-safety contract (preserved, now per shared session):
  * <ul>
- *   <li>opening always closes any existing GUI first (sync, entity thread), then waits for any
- *       in-flight async DB save <i>of that same chest</i> before loading fresh data.</li>
- *   <li>save() encodes inventory bytes synchronously on the calling thread, then flushes to DB
- *       on a daemon thread, keyed by (owner, index).</li>
+ *   <li>the <i>first</i> open of a chest waits for any in-flight async save of that same chest, then
+ *       loads fresh from the DB; subsequent opens attach to the live session and never re-read the DB
+ *       while it is open (the live inventory is authoritative).</li>
+ *   <li>the chest is persisted when its <i>last</i> viewer closes (or a force-close fires), encoding the
+ *       shared contents synchronously on the global thread then flushing to the DB on a daemon thread,
+ *       keyed by (owner, index).</li>
  *   <li>flushPendingSaves() in onDisable() blocks until all writes finish before the pool closes.</li>
  * </ul>
  */
@@ -54,6 +77,30 @@ public final class EnderChestService {
 
     /** Identifies an in-flight save by owner + chest index, so unrelated chests never block each other. */
     private record SaveKey(UUID owner, int index) {}
+
+    /** A queued open waiting for its session's first DB load to finish. */
+    private record Pending(Player player, @Nullable Location sourceBlock) {}
+
+    /**
+     * A live shared chest inventory and its current viewers. All fields are read and written only on the
+     * {@link #onGlobal} thread, so no per-field synchronization is needed.
+     */
+    private static final class Session {
+        final UUID owner;
+        final int index;
+        ChestKind kind;
+        @Nullable Inventory inv;                 // null until the first DB load completes
+        boolean ready;                           // inv is populated and viewers may attach
+        boolean closing;                         // a force-close is persisting; new attaches are rejected
+        final Set<UUID> viewers = new HashSet<>();
+        final Map<UUID, Location> viewerBlocks = new HashMap<>();  // per-viewer source block for lid animation
+        final List<Pending> waiting = new ArrayList<>();           // opens queued until ready
+
+        Session(UUID owner, int index) {
+            this.owner = owner;
+            this.index = index;
+        }
+    }
 
     private final LanguageManager lang;
     private final ContainerCodec  codec;
@@ -73,6 +120,9 @@ public final class EnderChestService {
 
     private final ConcurrentHashMap<SaveKey, CompletableFuture<Void>> pendingSaves =
             new ConcurrentHashMap<>();
+
+    /** Live shared sessions, keyed by (owner, index). Mutated only on the {@link #onGlobal} thread. */
+    private final ConcurrentHashMap<SaveKey, Session> sessions = new ConcurrentHashMap<>();
 
     // Write-through read cache of per-player settings, keyed by UUID. Populated on join
     // (preloadSettings), read by the dialog-open paths, updated in place on change, and evicted on
@@ -111,6 +161,19 @@ public final class EnderChestService {
     public void applyConfig(int defaultSize, long tempExpiryMillis) {
         this.defaultSize      = defaultSize;
         this.tempExpiryMillis = tempExpiryMillis;
+    }
+
+    /**
+     * Runs {@code task} on the single bookkeeping thread (main on Paper, global region on Folia),
+     * inline when already on it. All {@link #sessions} mutations funnel through here so the registry is
+     * race-free across both platforms.
+     */
+    private void onGlobal(Runnable task) {
+        if (foliaLib.getScheduler().isGlobalTickThread()) {
+            task.run();
+        } else {
+            foliaLib.getScheduler().runNextTick(t -> task.run());
+        }
     }
 
     // ---- opening ----
@@ -178,10 +241,7 @@ public final class EnderChestService {
     private void openPrimaryChest(Player player, UUID uuid, @Nullable Location sourceBlock) {
         CompletableFuture
                 .supplyAsync(() -> resolvePrimaryIndex(uuid), asyncExecutor)
-                .thenCompose(index -> waitPending(uuid, index).thenApply(v -> index))
-                .thenCompose(index -> CompletableFuture.supplyAsync(
-                        () -> storage.loadChest(uuid, index), asyncExecutor))
-                .thenAccept(data -> openLoaded(player, data, sourceBlock))
+                .thenAccept(index -> openShared(player, uuid, index, sourceBlock))
                 .exceptionally(e -> reportOpenFailure(player, e));
     }
 
@@ -229,17 +289,158 @@ public final class EnderChestService {
         }
     }
 
-    /** Opens a specific chest by index (from the management dialog). */
+    /** Opens a specific chest by index (from the management dialog), sharing the live session. */
     public void openChest(Player player, int index, @Nullable Location sourceBlock) {
-        UUID uuid = player.getUniqueId();
-        foliaLib.getScheduler().runAtEntity(player, outerTask -> {
+        openShared(player, player.getUniqueId(), index, sourceBlock);
+    }
+
+    /**
+     * Opens another player's chest for an admin, sharing the live session. The admin becomes a viewer of
+     * the same inventory the owner sees (concurrent edit on Paper; exclusive on Folia). Read-only vs
+     * editable is enforced per-click in the GUI listener via the admin's permissions, so this method
+     * itself simply joins the session.
+     */
+    public void adminOpen(Player admin, UUID owner, int index) {
+        openShared(admin, owner, index, null);
+    }
+
+    /**
+     * The single funnel through which every chest open passes. Closes the player's current chest GUI on
+     * their entity thread (flushing its session), then hands off to {@link #decideOpen} on the global
+     * bookkeeping thread to attach to — or create — the live session for {@code (owner, index)}.
+     */
+    private void openShared(Player player, UUID owner, int index, @Nullable Location sourceBlock) {
+        foliaLib.getScheduler().runAtEntity(player, t -> {
+            if (!player.isOnline()) return;
             closeExistingGui(player);
-            waitPending(uuid, index)
-                    .thenCompose(v -> CompletableFuture.supplyAsync(
-                            () -> storage.loadChest(uuid, index), asyncExecutor))
-                    .thenAccept(data -> openLoaded(player, data, sourceBlock))
-                    .exceptionally(e -> reportOpenFailure(player, e));
+            onGlobal(() -> decideOpen(player, owner, index, sourceBlock));
         });
+    }
+
+    /** Global-thread decision: attach to an existing live session, or create one and load it fresh. */
+    private void decideOpen(Player player, UUID owner, int index, @Nullable Location sourceBlock) {
+        SaveKey key = new SaveKey(owner, index);
+        UUID viewer = player.getUniqueId();
+        Session existing = sessions.get(key);
+        if (existing != null && !existing.closing) {
+            if (foliaLib.isFolia() && isOccupiedByOther(existing, viewer)) {
+                notifyOnPlayer(player, "chest.in-use");
+                return;
+            }
+            if (existing.ready) {
+                addViewerAndOpen(player, existing, sourceBlock);
+            } else {
+                existing.waiting.add(new Pending(player, sourceBlock));
+            }
+            return;
+        }
+
+        // No live session: create one and load fresh after any in-flight save for this key.
+        Session created = new Session(owner, index);
+        created.waiting.add(new Pending(player, sourceBlock));
+        sessions.put(key, created);
+        waitPending(owner, index)
+                .thenCompose(v -> CompletableFuture.supplyAsync(() -> storage.loadChest(owner, index), asyncExecutor))
+                .whenComplete((data, err) -> onGlobal(() -> finishCreate(key, created, data, err)));
+    }
+
+    /** True if a viewer (or a queued opener) other than {@code self} already holds this session. */
+    private static boolean isOccupiedByOther(Session s, UUID self) {
+        for (UUID u : s.viewers) {
+            if (!u.equals(self)) return true;
+        }
+        for (Pending p : s.waiting) {
+            if (!p.player().getUniqueId().equals(self)) return true;
+        }
+        return false;
+    }
+
+    /** Global-thread completion of a first load: build the shared inventory and flush the waiting queue. */
+    private void finishCreate(SaveKey key, Session created,
+                              @Nullable EnderChestData data, @Nullable Throwable err) {
+        List<Pending> waiters = new ArrayList<>(created.waiting);
+        created.waiting.clear();
+
+        // A force-close (admin resize/delete) may have superseded this session while the load was in flight.
+        boolean stale = sessions.get(key) != created || created.closing;
+        if (stale || err != null || data == null) {
+            sessions.remove(key, created);
+            for (Pending p : waiters) {
+                if (err != null) reportOpenFailure(p.player(), err);
+                else notifyOnPlayer(p.player(), "chest.not-found");
+            }
+            return;
+        }
+
+        Inventory inv = buildSharedInventory(data);
+        if (inv == null) {
+            sessions.remove(key, created);
+            for (Pending p : waiters) notifyOnPlayer(p.player(), "chest.codec-failed");
+            return;
+        }
+        created.kind  = data.kind();
+        created.inv   = inv;
+        created.ready = true;
+        for (Pending p : waiters) addViewerAndOpen(p.player(), created, p.sourceBlock());
+    }
+
+    /**
+     * Builds the shared {@link Inventory} for a chest, decoding its stored contents. The holder carries
+     * no source block (block animation is tracked per-viewer in the session). Returns null if the stored
+     * bytes fail to decode, so the caller can abort the open rather than risk corrupting the data.
+     */
+    private @Nullable Inventory buildSharedInventory(EnderChestData data) {
+        int size = data.size();
+        Component title = lang.getChestLabel(data.index(), data.customName(), data.kind());
+        Inventory inv = Bukkit.createInventory(
+                new EnderChestHolder(data.owner(), data.index(), size, data.kind(), null), size, title);
+
+        if (data.containerData() != null && data.containerData().length > 0) {
+            try {
+                inv.setContents(codec.decode(data.containerData(), size));
+            } catch (CodecException e) {
+                logger.error("Codec failure for {} chest {} — aborting open to protect stored data",
+                        data.owner(), data.index(), e);
+                return null;
+            }
+        }
+        return inv;
+    }
+
+    /**
+     * Global-thread: registers the player as a viewer of the live session, then opens the shared
+     * inventory for them on their entity thread (playing the lid animation if opened from a block).
+     */
+    private void addViewerAndOpen(Player player, Session s, @Nullable Location sourceBlock) {
+        UUID uuid = player.getUniqueId();
+        s.viewers.add(uuid);
+        if (sourceBlock != null) s.viewerBlocks.put(uuid, sourceBlock);
+        Inventory inv = s.inv;
+        foliaLib.getScheduler().runAtEntity(player, task -> {
+            if (!player.isOnline() || inv == null) {
+                onGlobal(() -> removeViewer(s, uuid));
+                return;
+            }
+            player.openInventory(inv);
+            if (sourceBlock != null) {
+                foliaLib.getScheduler().runAtLocation(sourceBlock, lt ->
+                        EnderChestAnimator.open(player, sourceBlock));
+            }
+        });
+    }
+
+    /**
+     * Global-thread: drops a viewer that never actually opened (offline by the time the open ran),
+     * persisting and tearing down the session if it leaves no viewers behind. No animation (the chest
+     * was never shown to this viewer).
+     */
+    private void removeViewer(Session s, UUID uuid) {
+        s.viewers.remove(uuid);
+        s.viewerBlocks.remove(uuid);
+        if (!s.closing && s.viewers.isEmpty() && s.waiting.isEmpty()) {
+            sessions.remove(new SaveKey(s.owner, s.index), s);
+            persist(s);
+        }
     }
 
     private int resolvePrimaryIndex(UUID uuid) {
@@ -250,46 +451,6 @@ public final class EnderChestService {
             index = storage.createChest(uuid, defaultSize);
         }
         return index;
-    }
-
-    private void openLoaded(Player player, @Nullable EnderChestData data, @Nullable Location sourceBlock) {
-        foliaLib.getScheduler().runAtEntity(player, task -> {
-            if (!player.isOnline()) return;
-            if (data == null) {
-                player.sendMessage(lang.get("chest.not-found"));
-                return;
-            }
-            doOpenInventory(player, data, sourceBlock);
-        });
-    }
-
-    private void doOpenInventory(Player player, EnderChestData data, @Nullable Location sourceBlock) {
-        int size = data.size();
-        Component title = lang.getChestLabel(data.index(), data.customName(), data.kind());
-        Inventory inv = Bukkit.createInventory(
-                new EnderChestHolder(data.owner(), data.index(), size, data.kind(), sourceBlock),
-                size, title);
-
-        if (data.containerData() != null && data.containerData().length > 0) {
-            try {
-                inv.setContents(codec.decode(data.containerData(), size));
-            } catch (CodecException e) {
-                logger.error("Codec failure for {} chest {} — aborting open to protect stored data",
-                        player.getName(), data.index(), e);
-                player.sendMessage(lang.get("chest.codec-failed"));
-                return;
-            }
-        }
-        player.openInventory(inv);
-
-        // Play the open lid animation now that the inventory is actually showing; the matching close
-        // animation fires from EnderChestGuiListener on InventoryCloseEvent. Both are gated on a
-        // source block, so command/dialog opens (no block) animate nothing. Dispatched to the block's
-        // region thread, as the animation touches the block entity (required on Folia).
-        if (sourceBlock != null) {
-            foliaLib.getScheduler().runAtLocation(sourceBlock, task ->
-                    EnderChestAnimator.open(player, sourceBlock));
-        }
     }
 
     private void closeExistingGui(Player player) {
@@ -306,6 +467,13 @@ public final class EnderChestService {
             if (player.isOnline()) player.sendMessage(lang.get("chest.load-failed"));
         });
         return null;
+    }
+
+    /** Sends a localized message to the player on their entity thread (if still online). */
+    private void notifyOnPlayer(Player player, String key) {
+        foliaLib.getScheduler().runAtEntity(player, t -> {
+            if (player.isOnline()) player.sendMessage(lang.get(key));
+        });
     }
 
     // ---- management dialog ----
@@ -342,6 +510,18 @@ public final class EnderChestService {
         ).exceptionally(e -> reportOpenFailure(player, e));
     }
 
+    /**
+     * Shows the admin "view another player's chests" list dialog. Each button opens the target's chest
+     * for the admin via the shared session ({@link #adminOpen}) — no edit-mode/rename/set-main. The
+     * chests are passed in already loaded (the command lists them to route 0/1/2+), so this only builds
+     * and pushes the dialog on the admin's entity thread.
+     */
+    public void showAdminViewList(Player admin, String targetName, UUID target, List<ChestSummary> chests) {
+        foliaLib.getScheduler().runAtEntity(admin, t -> {
+            if (admin.isOnline()) admin.showDialog(dialogs.adminViewListDialog(targetName, target, chests));
+        });
+    }
+
     /** Shows the per-chest detail dialog (Open / Rename / Set-main / Back). */
     public void openDetailDialog(Player player, int index) {
         boolean canSetMain = canSetMain(player);
@@ -375,23 +555,52 @@ public final class EnderChestService {
         ).exceptionally(e -> reportOpenFailure(player, e));
     }
 
-    // ---- saving ----
+    // ---- closing / saving ----
 
     /**
-     * Saves the inventory to the database asynchronously, keyed by (owner, chest index).
-     * Encodes bytes synchronously on the calling (entity) thread, then writes on a daemon thread.
+     * Detaches a viewer when they close the shared GUI (called from the GUI close and quit listeners on
+     * the player's entity thread). Removes them from the session on the global thread and, if they were
+     * the <i>last</i> viewer, persists the shared contents. A no-op if the session was already torn down
+     * by a force-close (which persists itself) — so the same close never double-saves.
      */
-    public void save(EnderChestHolder holder, Inventory inventory) {
-        UUID uuid = holder.getOwner();
-        int index = holder.getIndex();
+    public void detach(Player player, EnderChestHolder holder) {
+        UUID uuid = player.getUniqueId();
+        SaveKey key = new SaveKey(holder.getOwner(), holder.getIndex());
+        onGlobal(() -> {
+            Session s = sessions.get(key);
+            if (s == null) return;                         // already force-closed and persisted
 
-        // A temp chest that the player has fully emptied removes itself rather than persisting an
-        // empty row (the emptiness check is a fast in-memory scan; no decode needed). Serialized via
-        // runExclusive so a concurrent open waits, like any other item-moving operation.
-        if (holder.getKind() == ChestKind.TEMP && isInventoryEmpty(inventory)) {
-            runExclusive(uuid, index, () -> { storage.deleteChest(uuid, index); return null; })
+            boolean wasViewer = s.viewers.remove(uuid);
+            Location block = s.viewerBlocks.remove(uuid);
+            if (wasViewer && block != null) {
+                foliaLib.getScheduler().runAtLocation(block, lt ->
+                        EnderChestAnimator.close(player, block));
+            }
+
+            if (s.closing) return;                         // force-close path owns persistence
+            if (s.viewers.isEmpty() && s.waiting.isEmpty()) {
+                sessions.remove(key, s);
+                persist(s);
+            }
+        });
+    }
+
+    /**
+     * Persists a session's shared inventory to the database (must be called on the global thread, with
+     * no viewer still editing). Encodes bytes synchronously, then writes on a daemon thread, keyed by
+     * (owner, index) and registered in {@link #pendingSaves} so a concurrent open/op waits for it.
+     * An emptied TEMP chest removes itself instead of persisting an empty row.
+     */
+    private void persist(Session s) {
+        Inventory inv = s.inv;
+        if (inv == null) return;                           // never became ready; nothing to save
+        UUID owner = s.owner;
+        int index = s.index;
+
+        if (s.kind == ChestKind.TEMP && isInventoryEmpty(inv)) {
+            runExclusive(owner, index, () -> { storage.deleteChest(owner, index); return null; })
                     .exceptionally(e -> {
-                        logger.error("Failed to remove emptied temp chest {} for {}", index, uuid, e);
+                        logger.error("Failed to remove emptied temp chest {} for {}", index, owner, e);
                         return null;
                     });
             return;
@@ -399,19 +608,19 @@ public final class EnderChestService {
 
         byte[] encoded;
         try {
-            encoded = codec.encode(inventory.getContents());
+            encoded = codec.encode(inv.getContents());
         } catch (Exception e) {
             logger.error("Codec encode failure for {} chest {} — data NOT saved to prevent corruption",
-                    uuid, index, e);
+                    owner, index, e);
             return;
         }
 
-        SaveKey key = new SaveKey(uuid, index);
+        SaveKey key = new SaveKey(owner, index);
         CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
             try {
-                storage.saveChest(uuid, index, encoded);
+                storage.saveChest(owner, index, encoded);
             } catch (Exception e) {
-                logger.error("DB save failure for {} chest {}", uuid, index, e);
+                logger.error("DB save failure for {} chest {}", owner, index, e);
             }
         }, asyncExecutor);
 
@@ -428,6 +637,11 @@ public final class EnderChestService {
 
     public CompletableFuture<List<ChestSummary>> listChestsAsync(UUID owner) {
         return CompletableFuture.supplyAsync(() -> storage.listChests(owner), asyncExecutor);
+    }
+
+    /** Resolves the index {@code /ec} would open for a player (primary, or lowest; -1 if they own none). */
+    public CompletableFuture<Integer> getPrimaryIndexAsync(UUID owner) {
+        return CompletableFuture.supplyAsync(() -> storage.getPrimaryIndex(owner), asyncExecutor);
     }
 
     public CompletableFuture<Integer> createChestAsync(UUID owner, int size) {
@@ -521,12 +735,12 @@ public final class EnderChestService {
 
     /**
      * Resizes a chest, spilling any cut-off items into a temp chest if it is shrunk below its used
-     * slots. Force-closes the owner's GUI first (flushing its save), then runs the load-decode-split
-     * exclusively per (owner, index) so no concurrent open sees a half-applied state. A grow, or a
-     * shrink that loses no items, is a plain resize.
+     * slots. Force-closes every viewer's GUI first (flushing the live session), then runs the
+     * load-decode-split exclusively per (owner, index) so no concurrent open sees a half-applied state.
+     * A grow, or a shrink that loses no items, is a plain resize.
      */
     public CompletableFuture<Void> resizeOrSpill(UUID owner, int index, int newSize) {
-        return forceCloseIfOpen(owner, index).thenCompose(v -> runExclusive(owner, index, () -> {
+        return forceCloseAll(owner, index).thenCompose(v -> runExclusive(owner, index, () -> {
             EnderChestData data = storage.loadChest(owner, index);
             if (data == null) return null;
 
@@ -549,12 +763,12 @@ public final class EnderChestService {
 
     /**
      * Removes a chest. With {@code force} the row is hard-deleted (items lost immediately); otherwise
-     * any items are spilled into a temp chest first. Force-closes the owner's GUI, then performs the
+     * any items are spilled into a temp chest first. Force-closes every viewer's GUI, then performs the
      * delete exclusively per (owner, index) so the swap is dupe-safe. Used by {@code /ee delete} and
      * by the expiry sweeper (NORMAL → spill, TEMP → force).
      */
     public CompletableFuture<Void> removeChest(UUID owner, int index, boolean force) {
-        return forceCloseIfOpen(owner, index).thenCompose(v -> runExclusive(owner, index, () -> {
+        return forceCloseAll(owner, index).thenCompose(v -> runExclusive(owner, index, () -> {
             if (force) {
                 storage.deleteChest(owner, index);
                 return null;
@@ -583,7 +797,7 @@ public final class EnderChestService {
      *
      * <p>Targets are snapshotted up front, then deleted sequentially: a spilling delete creates a fresh
      * temp chest at a higher index, but those are not in the target list so they are never re-touched.
-     * Each per-index delete still serializes behind its own pending saves and force-closes an open GUI,
+     * Each per-index delete still serializes behind its own pending saves and force-closes open GUIs,
      * so the bulk op is dupe-safe.
      */
     public CompletableFuture<Integer> removeNewestChests(UUID owner, int count, boolean force) {
@@ -634,27 +848,49 @@ public final class EnderChestService {
     }
 
     /**
-     * If the owner is online with exactly that chest open, closes it on their entity thread (which
-     * fires the InventoryCloseEvent → {@code save()} synchronously, registering its pending future).
-     * The returned future completes once the close has been dispatched, so the caller can then chain
-     * an exclusive op that will serialize behind the just-registered save.
+     * Force-closes the GUI of <b>every</b> viewer of {@code (owner, index)}, then persists the shared
+     * contents and tears down the session — returning a future that completes once the save has been
+     * registered in {@link #pendingSaves}. The caller can then chain an exclusive op that serialises
+     * behind that save, keeping admin resize/delete dupe-safe even with multiple concurrent viewers.
+     *
+     * <p>The persist runs only after all viewer screens have actually closed (their close handlers see
+     * {@code closing} and skip their own save), so the shared inventory is read with no viewer still
+     * editing it — safe to encode on the global thread even on Folia.
      */
-    private CompletableFuture<Void> forceCloseIfOpen(UUID owner, int index) {
-        Player player = Bukkit.getPlayer(owner);
-        if (player == null || !player.isOnline()) {
-            return CompletableFuture.completedFuture(null);
-        }
+    private CompletableFuture<Void> forceCloseAll(UUID owner, int index) {
         CompletableFuture<Void> done = new CompletableFuture<>();
-        foliaLib.getScheduler().runAtEntity(player, task -> {
-            try {
-                Inventory top = player.getOpenInventory().getTopInventory();
-                if (top.getHolder() instanceof EnderChestHolder h
-                        && h.getOwner().equals(owner) && h.getIndex() == index) {
-                    player.closeInventory();
-                }
-            } finally {
+        onGlobal(() -> {
+            SaveKey key = new SaveKey(owner, index);
+            Session s = sessions.get(key);
+            if (s == null) {
                 done.complete(null);
+                return;
             }
+            s.closing = true;
+            List<CompletableFuture<?>> closes = new ArrayList<>();
+            for (UUID uuid : new ArrayList<>(s.viewers)) {
+                Player p = Bukkit.getPlayer(uuid);
+                if (p == null || !p.isOnline()) continue;
+                CompletableFuture<Void> c = new CompletableFuture<>();
+                closes.add(c);
+                foliaLib.getScheduler().runAtEntity(p, t -> {
+                    try {
+                        Inventory top = p.getOpenInventory().getTopInventory();
+                        if (top.getHolder() instanceof EnderChestHolder h
+                                && h.getOwner().equals(owner) && h.getIndex() == index) {
+                            p.closeInventory();
+                        }
+                    } finally {
+                        c.complete(null);
+                    }
+                });
+            }
+            CompletableFuture.allOf(closes.toArray(new CompletableFuture[0])).whenComplete((v, e) ->
+                    onGlobal(() -> {
+                        persist(s);                        // authoritative state; all viewers now closed
+                        sessions.remove(key, s);
+                        done.complete(null);
+                    }));
         });
         return done;
     }
@@ -703,6 +939,19 @@ public final class EnderChestService {
 
     // ---- shutdown ----
 
+    /**
+     * Persists every still-open shared session before shutdown. Runs on the disable thread (main /
+     * global) with the server stopping, so no viewer can be editing concurrently — encoding the live
+     * contents is safe. Each persist registers a pending save that {@link #flushPendingSaves} then waits
+     * on.
+     */
+    private void persistOpenSessions() {
+        for (Session s : sessions.values()) {
+            if (s.ready && !s.closing) persist(s);
+        }
+        sessions.clear();
+    }
+
     public void flushPendingSaves() {
         if (pendingSaves.isEmpty()) return;
         try {
@@ -714,6 +963,7 @@ public final class EnderChestService {
     }
 
     public void shutdown() {
+        persistOpenSessions();
         flushPendingSaves();
         // Write-through cache holds no dirty state (every change was persisted immediately), so there
         // is nothing to flush — just drop the references.

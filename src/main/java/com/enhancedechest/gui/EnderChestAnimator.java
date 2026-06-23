@@ -21,7 +21,7 @@ import org.bukkit.entity.Player;
  * server build doesn't expose {@code Lidded} on ender chests.
  *
  * Thread requirement: must be called on the region thread that owns the block's chunk
- * (Folia) or the main thread (Spigot/Paper). Callers already dispatch via runAtLocation.
+ * (Folia) or the main thread (Paper). Callers already dispatch via runAtLocation.
  */
 public final class EnderChestAnimator {
 

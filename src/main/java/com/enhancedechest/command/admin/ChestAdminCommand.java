@@ -184,6 +184,70 @@ public final class ChestAdminCommand {
         return 1;
     }
 
+    // ---- view ----
+
+    public static int view(CommandSourceStack source, String playerName) {
+        return doView(source, playerName, null, false);
+    }
+
+    public static int viewList(CommandSourceStack source, String playerName) {
+        return doView(source, playerName, null, true);
+    }
+
+    public static int view(CommandSourceStack source, String playerName, int index) {
+        return doView(source, playerName, index, false);
+    }
+
+    /**
+     * Opens another player's chest for the admin, sharing the live session so the admin sees (and, with
+     * the edit permission, mutates) the very same inventory the owner has open — no dupe possible.
+     * Routing (no explicit index):
+     * <ul>
+     *   <li><b>0 chests</b> → {@code admin.view-no-chests};</li>
+     *   <li><b>1 chest</b> → open it directly (unless {@code list} forces the menu);</li>
+     *   <li><b>2+ chests</b>, or the literal {@code list} → the admin chest-list dialog to pick one.</li>
+     * </ul>
+     * An explicit index opens that chest directly (verified to exist first). Offline owners are
+     * supported (the admin becomes the sole viewer; the chest persists on close).
+     */
+    private static int doView(CommandSourceStack source, String playerName,
+                              @Nullable Integer index, boolean forceList) {
+        Ctx ctx = resolve(source, playerName);
+        if (ctx == null) return 0;
+
+        if (!(ctx.sender instanceof Player admin)) {
+            ctx.sender.sendMessage(ctx.lang.get("command.not-player"));
+            return 0;
+        }
+
+        if (index != null) {
+            int idx = index;
+            ctx.service.listChestsAsync(ctx.target).thenAccept(chests -> {
+                if (chests.stream().noneMatch(c -> c.index() == idx)) {
+                    ctx.sender.sendMessage(ctx.lang.get("admin.chest-not-found",
+                            "player", playerName, "index", Integer.toString(idx)));
+                    return;
+                }
+                ctx.service.adminOpen(admin, ctx.target, idx);
+            });
+            return 1;
+        }
+
+        ctx.service.listChestsAsync(ctx.target).thenAccept(chests -> {
+            if (chests.isEmpty()) {
+                ctx.sender.sendMessage(ctx.lang.get("admin.view-no-chests", "player", playerName));
+                return;
+            }
+            // A lone chest opens straight away unless 'list' was given; 2+ always show the picker.
+            if (!forceList && chests.size() == 1) {
+                ctx.service.adminOpen(admin, ctx.target, chests.get(0).index());
+            } else {
+                ctx.service.showAdminViewList(admin, playerName, ctx.target, chests);
+            }
+        });
+        return 1;
+    }
+
     // ---- helpers ----
 
     private record Ctx(CommandSender sender, EnderChestService service, LanguageManager lang, UUID target) {}

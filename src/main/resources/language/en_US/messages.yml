@@ -5,7 +5,7 @@
 #  A line containing '<' is parsed as MiniMessage, otherwise as legacy '&' codes.
 # ============================================================================
 
-prefix: '&#9B59B6EɴʜᴀɴᴄᴇᴅEᴄʜᴇsᴛ &8⏩ &r'
+prefix: '&#9B59B6EnhancedEchest &8⏩ &r'
 
 command:
   not-player: '{prefix}&fOnly players can use the ender chest.'
@@ -18,6 +18,10 @@ chest:
   none: '{prefix}&fYou do not have any ender chests yet.'
   # Shown (on the action bar) when a player tries to put an item into a temporary chest.
   temp-take-only: '&cThis is a temporary chest. You can only take items out, not put them in.'
+  # Shown to an admin who tries to open a chest already in use (Folia allows only one viewer per chest).
+  in-use: '{prefix}&fThat ender chest is currently in use. Please try again in a moment.'
+  # Action bar shown to an admin who may view but not edit another player''s chest (no edit permission).
+  view-only: '&7Read-only — you can view this chest but not change its contents.'
 
 migrate:
   no-players: '{prefix}&fNo players are online.'
@@ -32,6 +36,8 @@ admin:
   invalid-size: '{prefix}&fSize must be a multiple of 9 between 9 and 54.'
   invalid-duration: '{prefix}&fInvalid duration "{duration}". Use a value like 20s, 5m, 1h, 7d, or 1d_2h_30m.'
   chest-not-found: '{prefix}&f{player} has no ender chest with index {index}.'
+  # /ee view <player> — the target owns no chests yet, so there is nothing to open.
+  view-no-chests: '{prefix}&f{player} does not have any ender chests yet.'
   chest-added: '{prefix}&fAdded ender chest {index} with {size} slots to {player}.'
   chest-added-expiring: '{prefix}&fAdded ender chest {index} with {size} slots to {player}. It will expire in {duration}.'
   chests-added: '{prefix}&fAdded {count} ender chests ({range}) with {size} slots to {player}.'

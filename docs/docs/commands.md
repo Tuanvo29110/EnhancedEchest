@@ -55,6 +55,18 @@ Change the slot count of an existing chest. Growing, or shrinking with no items 
 Delete the <code>&lt;count&gt;</code> <strong>newest</strong> chests (the highest indices) a player owns. By default any items they hold are <strong>spilled</strong> into a temporary chest so nothing is lost; add the literal <code>force</code> to <strong>hard-delete</strong> them, discarding their contents immediately. The player's <strong>first chest</strong> (lowest index) is always kept, so this can never leave them with no chest — if only the first chest remains, nothing is deleted. If you delete a player's main chest, they simply have no main until they pick a new one.
 </CommandRow>
 
+<CommandRow :commands="['/ee view &lt;player&gt; [list | index]']" permission="enhancedechest.admin.view">
+Open another player's ender chest yourself. The player does <strong>not</strong> need to be online. You join the <strong>same live inventory</strong> the owner sees, so there is no risk of item duplication.
+<ul>
+<li><strong>No argument</strong> — if they own one chest it opens directly; with several, a <strong>picker menu</strong> of their chests opens so you can choose one.</li>
+<li><strong><code>list</code></strong> — always open the picker menu, even if they only own one chest.</li>
+<li><strong><code>&lt;index&gt;</code></strong> — open that specific chest by number (e.g. <code>/ee view Steve 2</code>); tab-completion suggests the target's chests.</li>
+</ul>
+Permissions: with <code>enhancedechest.admin.view</code> alone you can <strong>look but not touch</strong> — every attempt to move an item is blocked. Add <code>enhancedechest.admin.edit</code> to also <strong>take and add</strong> items.
+<br>
+On <strong>Paper</strong> the admin and the player can edit the same chest at the same time. On <strong>Folia</strong> only one person can have a chest open at a time, so if the other is already using it you'll be asked to try again shortly.
+</CommandRow>
+
 <CommandRow commands="/ee reload" permission="enhancedechest.admin.reload">
 Reload the configuration and language files from disk without restarting the server.
 </CommandRow>
@@ -64,6 +76,14 @@ Import vanilla ender chest contents into the plugin's storage — for a single o
 </CommandRow>
 
 </div>
+
+::: tip Offline players
+`/ee add`, `/ee resize`, `/ee delete` and `/ee view` all work on **offline** players (anyone who has
+joined the server before) — their chests live in the database, not on the player object. Tab-completion
+suggests offline names too: start typing and matching offline players appear alongside online ones
+(marked *Player (offline)*; the list is capped so a huge roster can't flood the menu). Only
+`/ee migrate run` requires the player to be **online**, since it reads their live vanilla ender chest.
+:::
 
 ::: warning Durations
 Duration units are `s` (second), `m` (minute), `h` (hour), `d` (day), `w` (week), `mo` (month, ≈30 days)

@@ -54,6 +54,10 @@ Each chest can be given a custom name. Named chests show that name as their inve
 Admins can add, resize, and delete chests for any player with <code>/ee add</code>, <code>/ee resize</code>, and <code>/ee delete</code>. Deleting the main chest leaves the player with no main until they pick a new one from the menu.
 </FeatureCard>
 
+<FeatureCard icon="👁️" title="View Other Players' Chests">
+With <code>/ee view &lt;player&gt;</code> an admin can open any player's chest — online or offline. One chest opens directly; with several, a <strong>picker menu</strong> lets you choose (or use <code>/ee view &lt;player&gt; list</code> to always show it, or <code>&lt;index&gt;</code> for a specific chest). Grant <code>admin.view</code> for a read-only look, or add <code>admin.edit</code> to take and add items. The admin joins the <strong>same live inventory</strong> the owner sees, so contents can never be duplicated (on Paper both can even edit at once).
+</FeatureCard>
+
 </CardGrid>
 
 The chest menu is built on Paper's modern **Dialog API**, so navigation feels native and doesn't recenter the player's cursor as they move between screens.
@@ -91,6 +95,7 @@ EnhancedEchest is built so that ender chest contents can never be duplicated thr
 - Contents are **loaded fresh** from the database every time a chest is opened
 - Contents are **saved immediately** when the chest is closed or the player quits
 - A **pending-save chain** ensures the next open always waits for any in-flight save to finish before loading — so a player can never reopen and read stale data
+- When two people view the same chest at once (e.g. an admin via `/ee view` and the owner), they share **one live inventory** — so even simultaneous editing can't dupe items (concurrent editing on Paper; one viewer at a time on Folia)
 
 ---
 

@@ -22,6 +22,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.BiConsumer;
 
 /**
@@ -149,6 +150,47 @@ public final class ChestDialogs {
                 .base(DialogBase.builder(lang.getGui("dialog.list-title"))
                         .body(List.of(DialogBody.plainMessage(lang.getGui("dialog.list-body"), BODY_WIDTH)))
                         .inputs(List.of(editMode))
+                        .build())
+                .type(DialogType.multiAction(buttons, close, columnsFor(ordered.size()))));
+    }
+
+    /**
+     * Admin "view another player's chests" list: one button per chest that opens it <i>for the admin</i>
+     * via the shared session ({@link EnderChestService#adminOpen}). Unlike {@link #listDialog} there is
+     * no edit-mode checkbox, rename, or set-main — an admin only views/edits chest <i>contents</i>, never
+     * the owner's chest metadata. Reachable from {@code /ee view <player>} (2+ chests) and
+     * {@code /ee view <player> list}.
+     *
+     * @param targetName display name of the owner whose chests these are (shown in the title)
+     * @param target     UUID of the owner; passed to {@code adminOpen} when a button is clicked
+     */
+    public Dialog adminViewListDialog(String targetName, UUID target, List<ChestSummary> chests) {
+        // Same ordering as the player list: temp (expiring) chests first, then natural index order.
+        List<ChestSummary> ordered = new ArrayList<>(chests);
+        ordered.sort(Comparator
+                .comparingInt((ChestSummary c) -> c.kind() == ChestKind.TEMP ? 0 : 1)
+                .thenComparingInt(ChestSummary::index));
+
+        List<ActionButton> buttons = new ArrayList<>(ordered.size());
+        for (ChestSummary chest : ordered) {
+            int index = chest.index();
+            Component label = withIcon(chest, lang.getChestLabel(index, chest.customName(), chest.kind()));
+            if (chest.primary()) {
+                label = label.append(Component.text(" ")).append(lang.getGui("dialog.main-tag"));
+            }
+            buttons.add(ActionButton.create(label, listTooltip(chest), BUTTON_WIDTH,
+                    click((view, audience) -> {
+                        if (audience instanceof Player p) service.adminOpen(p, target, index);
+                    })));
+        }
+
+        // Exit button is a plain close (no state to persist, unlike the player list's edit-mode checkbox).
+        ActionButton close = ActionButton.create(lang.getGui("dialog.close"), null, BUTTON_WIDTH,
+                click((view, audience) -> { /* dismiss only */ }));
+
+        return Dialog.create(builder -> builder.empty()
+                .base(DialogBase.builder(lang.getGui("dialog.admin-list-title", "player", targetName))
+                        .body(List.of(DialogBody.plainMessage(lang.getGui("dialog.admin-list-body"), BODY_WIDTH)))
                         .build())
                 .type(DialogType.multiAction(buttons, close, columnsFor(ordered.size()))));
     }
