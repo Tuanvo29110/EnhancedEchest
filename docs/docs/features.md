@@ -81,21 +81,12 @@ With <code>/ee view &lt;player&gt;</code> an admin can open any player's chest, 
        <figure><img alt="..." src="..." /><figcaption>Caption</figcaption></figure>
      The .placeholder-row frames and sizes any <img> dropped inside it. Delete a box you don't want. -->
 <div class="placeholder-row">
-  <div class="showcase-placeholder">
-    <span class="sp-icon">🗂️</span>
-    <span class="sp-title">Chest detail menu</span>
-    <span class="sp-hint">Drop the chest management screen here.</span>
-  </div>
-  <div class="showcase-placeholder">
-    <span class="sp-icon">✏️</span>
-    <span class="sp-title">Rename menu</span>
-    <span class="sp-hint">Drop the rename prompt here.</span>
-  </div>
-  <div class="showcase-placeholder">
-    <span class="sp-icon">🎨</span>
-    <span class="sp-title">Icon picker</span>
-    <span class="sp-hint">Drop the icon selection menu here.</span>
-  </div>
+<img width="1162" height="1067" alt="detail" src="https://github.com/user-attachments/assets/76bc97fa-1dcb-4e39-8bde-9504ebc4d768" />
+
+<img width="1013" height="1067" alt="rename" src="https://github.com/user-attachments/assets/573814dd-6f58-4e9c-b65a-58842e3ba2a2" />
+
+<img width="1802" height="1068" alt="icon" src="https://github.com/user-attachments/assets/ce6b235b-980c-4403-86d3-503c25f32d77" />
+
 </div>
 
 ---
