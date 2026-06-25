@@ -40,7 +40,10 @@ The default size for a player's first chest is set with <code>enderchest.default
 
 Players are no longer limited to one ender chest. Each player can own several, managed through an in-game menu.
 
-<img class="feature-shot" width="1422" height="1070" alt="Chest list menu" src="https://github.com/user-attachments/assets/f693c05c-7427-489b-aa41-b68f3341cda1" />
+<figure class="feature-figure">
+  <img alt="The chest list menu showing several owned ender chests" src="https://github.com/user-attachments/assets/f693c05c-7427-489b-aa41-b68f3341cda1" />
+  <figcaption>With two or more chests, opening your ender chest brings up this menu of every chest you own, each with its slot count.</figcaption>
+</figure>
 
 <CardGrid>
 
@@ -73,6 +76,27 @@ With <code>/ee view &lt;player&gt;</code> an admin can open any player's chest, 
 </FeatureCard>
 
 </CardGrid>
+
+<!-- Customization flow screenshots. Replace each placeholder <div> with an image, e.g.:
+       <figure><img alt="..." src="..." /><figcaption>Caption</figcaption></figure>
+     The .placeholder-row frames and sizes any <img> dropped inside it. Delete a box you don't want. -->
+<div class="placeholder-row">
+  <div class="showcase-placeholder">
+    <span class="sp-icon">🗂️</span>
+    <span class="sp-title">Chest detail menu</span>
+    <span class="sp-hint">Drop the chest management screen here.</span>
+  </div>
+  <div class="showcase-placeholder">
+    <span class="sp-icon">✏️</span>
+    <span class="sp-title">Rename menu</span>
+    <span class="sp-hint">Drop the rename prompt here.</span>
+  </div>
+  <div class="showcase-placeholder">
+    <span class="sp-icon">🎨</span>
+    <span class="sp-title">Icon picker</span>
+    <span class="sp-hint">Drop the icon selection menu here.</span>
+  </div>
+</div>
 
 ---
 

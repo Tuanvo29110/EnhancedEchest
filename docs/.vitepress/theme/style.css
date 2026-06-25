@@ -59,6 +59,40 @@
     color: var(--vp-c-text-3);
 }
 
+/* Row of placeholders/screenshots that sit side by side on wide viewports and
+   wrap to one column on narrow ones. Any <img> dropped in gets framed to match. */
+.placeholder-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin: 24px 0;
+}
+
+.placeholder-row > * {
+    flex: 1 1 240px;
+    margin: 0;
+}
+
+.placeholder-row figure {
+    margin: 0;
+    text-align: center;
+}
+
+.placeholder-row img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    border: 1px solid var(--vp-c-border);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+}
+
+.placeholder-row figcaption {
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: var(--vp-c-text-3);
+}
+
 /* Centered, framed screenshot. Clears the CardGrid above it and scales down
    gracefully on narrow viewports instead of using fixed width/height. */
 .feature-shot {
@@ -70,6 +104,31 @@
     border-radius: 12px;
     border: 1px solid var(--vp-c-border);
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+}
+
+/* Framed screenshot with an optional caption. Larger than .feature-shot so
+   dialog/menu screenshots stay readable; clears the CardGrid and scales down
+   on narrow viewports. */
+.feature-figure {
+    margin: 36px auto;
+    max-width: 560px;
+    text-align: center;
+}
+
+.feature-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 0 auto;
+    border-radius: 12px;
+    border: 1px solid var(--vp-c-border);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.22);
+}
+
+.feature-figure figcaption {
+    margin-top: 12px;
+    font-size: 0.85rem;
+    color: var(--vp-c-text-3);
 }
 
 /* Wider banner-style showcase image/GIF for the landing page. */
