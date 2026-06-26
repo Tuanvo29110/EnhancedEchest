@@ -112,3 +112,46 @@
     border: 1px solid var(--vp-c-border);
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
 }
+
+/* Lucide icons injected into sidebar section titles (see config.mts `withIcon`).
+   The icon sits in a soft rounded badge; badge + label form a flex row so the
+   label can wrap to a second line while the badge stays pinned to the top line. */
+.VPSidebarItem .text:has(.sidebar-icon-badge) {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    /* Pull the badge + label slightly left so the icon, not the text, lines up
+       with the sidebar's left edge. */
+    margin-left: -20px;
+}
+
+.sidebar-icon-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: var(--vp-c-brand-soft);
+    color: var(--vp-c-brand-1);
+    transition: background-color 0.25s, color 0.25s;
+}
+
+.sidebar-icon-badge .sidebar-icon {
+    width: 15px;
+    height: 15px;
+}
+
+/* Vertically center the label against the 26px badge on a single line; if the
+   label wraps, the badge stays aligned to the first line via `flex-start`. */
+.VPSidebarItem .text:has(.sidebar-icon-badge) .sidebar-label {
+    line-height: 26px;
+}
+
+/* Brighten the badge when its section row is active/hovered. */
+.VPSidebarItem.is-active > .item .sidebar-icon-badge,
+.VPSidebarItem > .item:hover .sidebar-icon-badge {
+    background: var(--vp-c-brand-1);
+    color: var(--vp-c-bg);
+}

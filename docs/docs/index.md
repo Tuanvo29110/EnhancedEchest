@@ -33,7 +33,7 @@ Players are no longer limited to a single ender chest. Admins can grant extra ch
 </FeatureCard>
 
 <FeatureCard icon="Palette" title="Custom Names and Icons">
-Each chest can have its own name and icon chosen from an in-game picker — no commands needed. Named chests show their name as the inventory title.
+Each chest can have its own name and icon chosen from an in-game picker - no commands needed. Named chests show their name as the inventory title.
 </FeatureCard>
 
 <FeatureCard icon="Key" title="Permission-Based Grants">

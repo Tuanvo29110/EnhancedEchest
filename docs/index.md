@@ -27,7 +27,7 @@ features:
     details: Give players more than one ender chest. Open, name, and switch between them from a clean in-game menu.
     link: /docs/features
   - title: Custom Names and Icons
-    details: Each chest can have its own name and icon chosen straight from an in-game picker — no commands needed.
+    details: Each chest can have its own name and icon chosen straight from an in-game picker - no commands needed.
     link: /docs/features
   - title: Permission-Based Grants
     details: Hand out extra chests by rank or group. Grants sync automatically and are revoked cleanly when a rank changes.

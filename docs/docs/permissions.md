@@ -16,19 +16,19 @@ See [Permission-Granted Chests](#permission-granted-chests) below for full detai
 
 Each `/ee` command requires only its own node. There is no separate base permission:
 
-**`enhancedechest.admin.add`** — `/ee add`: give a player a new chest.
+**`enhancedechest.admin.add`** - `/ee add`: give a player a new chest.
 
-**`enhancedechest.admin.resize`** — `/ee resize`: change a chest's slot count.
+**`enhancedechest.admin.resize`** - `/ee resize`: change a chest's slot count.
 
-**`enhancedechest.admin.delete`** — `/ee delete`: delete a player's newest chests.
+**`enhancedechest.admin.delete`** - `/ee delete`: delete a player's newest chests.
 
-**`enhancedechest.admin.view`** — `/ee view`: open another player's chest (read-only).
+**`enhancedechest.admin.view`** - `/ee view`: open another player's chest (read-only).
 
-**`enhancedechest.admin.edit`** — combined with `admin.view`, allows moving items.
+**`enhancedechest.admin.edit`** - combined with `admin.view`, allows moving items.
 
-**`enhancedechest.admin.reload`** — `/ee reload`: reload config and language files.
+**`enhancedechest.admin.reload`** - `/ee reload`: reload config and language files.
 
-**`enhancedechest.admin.migrate`** — `/ee migrate vanilla`, `/ee migrate axvaults`, and `/ee migrate playervaultsx`: import data from vanilla ender chests, the AxVaults plugin, or the PlayerVaultsX plugin.
+**`enhancedechest.admin.migrate`** - `/ee migrate vanilla`, `/ee migrate axvaults`, and `/ee migrate playervaultsx`: import data from vanilla ender chests, the AxVaults plugin, or the PlayerVaultsX plugin.
 
 ::: tip
 To grant full admin access in one go, give `enhancedechest.admin.*` (if your permission plugin supports wildcards).
@@ -43,7 +43,7 @@ Use `enhancedechest.additional_amount.<count>.slot.<size>` to tie chest perks to
 - **Nodes stack**: granting `...1.slot.9` and `...2.slot.9` gives the player three 9-slot chests total.
 - **Revocation is clean**: losing a node removes those chests; items spill to a recoverable temporary chest.
 - **The base chest is always kept**: grants never delete or override the player's first chest.
-- Grants sync on the player's next chest open — no relog needed.
+- Grants sync on the player's next chest open - no relog needed.
 
 ::: warning
 Permission grants only apply while `permission-chests.enabled: true` in `config.yml`. Disabling it stops syncing but leaves already-granted chests in place.

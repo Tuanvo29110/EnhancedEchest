@@ -16,19 +16,19 @@ Xem [Rương Cấp Theo Quyền](#permission-granted-chests) bên dưới để 
 
 Mỗi lệnh `/ee` chỉ cần đúng node riêng của lệnh đó. Không còn node cơ sở chung:
 
-**`enhancedechest.admin.add`** — `/ee add`: cấp cho người chơi một rương mới.
+**`enhancedechest.admin.add`** - `/ee add`: cấp cho người chơi một rương mới.
 
-**`enhancedechest.admin.resize`** — `/ee resize`: thay đổi số ô của một rương.
+**`enhancedechest.admin.resize`** - `/ee resize`: thay đổi số ô của một rương.
 
-**`enhancedechest.admin.delete`** — `/ee delete`: xóa các rương mới nhất của người chơi.
+**`enhancedechest.admin.delete`** - `/ee delete`: xóa các rương mới nhất của người chơi.
 
-**`enhancedechest.admin.view`** — `/ee view`: mở rương của người chơi khác (chỉ-đọc).
+**`enhancedechest.admin.view`** - `/ee view`: mở rương của người chơi khác (chỉ-đọc).
 
-**`enhancedechest.admin.edit`** — kết hợp với `admin.view`, cho phép di chuyển vật phẩm.
+**`enhancedechest.admin.edit`** - kết hợp với `admin.view`, cho phép di chuyển vật phẩm.
 
-**`enhancedechest.admin.reload`** — `/ee reload`: tải lại file cấu hình và ngôn ngữ.
+**`enhancedechest.admin.reload`** - `/ee reload`: tải lại file cấu hình và ngôn ngữ.
 
-**`enhancedechest.admin.migrate`** — `/ee migrate vanilla`, `/ee migrate axvaults` và `/ee migrate playervaultsx`: nhập dữ liệu từ rương Ender vanilla, plugin AxVaults hoặc plugin PlayerVaultsX.
+**`enhancedechest.admin.migrate`** - `/ee migrate vanilla`, `/ee migrate axvaults` và `/ee migrate playervaultsx`: nhập dữ liệu từ rương Ender vanilla, plugin AxVaults hoặc plugin PlayerVaultsX.
 
 ::: tip
 Để cấp toàn quyền quản trị một lần, cấp `enhancedechest.admin.*` (nếu plugin quyền của bạn hỗ trợ wildcard).

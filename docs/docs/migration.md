@@ -74,7 +74,7 @@ Each PlayerVaultsX vault is imported into the EnhancedEchest chest with the **sa
 
 ### Before You Start
 
-PlayerVaultsX stores each player's vaults in a flat file at `plugins/PlayerVaults/newvaults/<uuid>.yml` — there is no database to configure. EnhancedEchest reads those files directly:
+PlayerVaultsX stores each player's vaults in a flat file at `plugins/PlayerVaults/newvaults/<uuid>.yml` - there is no database to configure. EnhancedEchest reads those files directly:
 
 - **Vaults are saved when closed.** PlayerVaultsX writes a vault to disk when the player closes it, so make sure no one is sitting in an open vault during the migration. Restarting the source server (or simply having players log out) flushes everything to disk.
 - **Run on a modern Paper server.** EnhancedEchest decodes PlayerVaultsX items using Paper's item format. Vault data created on a modern Paper server (1.20.6+) imports cleanly; data written long ago by an old Spigot server uses a different internal format and may not decode.

@@ -74,7 +74,7 @@ Mỗi kho PlayerVaultsX được nhập vào rương EnhancedEchest có **cùng 
 
 ### Trước Khi Bắt Đầu
 
-PlayerVaultsX lưu kho của mỗi người chơi trong một tệp phẳng tại `plugins/PlayerVaults/newvaults/<uuid>.yml` — không có cơ sở dữ liệu nào cần cấu hình. EnhancedEchest đọc trực tiếp các tệp đó:
+PlayerVaultsX lưu kho của mỗi người chơi trong một tệp phẳng tại `plugins/PlayerVaults/newvaults/<uuid>.yml` - không có cơ sở dữ liệu nào cần cấu hình. EnhancedEchest đọc trực tiếp các tệp đó:
 
 - **Kho được lưu khi đóng.** PlayerVaultsX ghi một kho xuống đĩa khi người chơi đóng nó, nên hãy chắc chắn không ai đang mở kho trong lúc chuyển dữ liệu. Khởi động lại server nguồn (hoặc đơn giản là cho người chơi đăng xuất) sẽ ghi mọi thứ xuống đĩa.
 - **Chạy trên server Paper hiện đại.** EnhancedEchest giải mã vật phẩm PlayerVaultsX bằng định dạng vật phẩm của Paper. Dữ liệu kho tạo trên server Paper hiện đại (1.20.6+) nhập trơn tru; dữ liệu được ghi từ lâu bởi server Spigot cũ dùng định dạng nội bộ khác và có thể không giải mã được.

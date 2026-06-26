@@ -91,7 +91,7 @@ Số kết nối tối đa trong pool. Chỉ áp dụng cho MySQL, MariaDB và P
 
 <ConfigGroup name="backup">
 <template #info>
-Tự động lưu bản sao toàn bộ dữ liệu rương Ender theo định kỳ. <strong>Chỉ hỗ trợ SQLite</strong> — nếu dùng MySQL/MariaDB/PostgreSQL, hãy dùng công cụ sao lưu của chính máy chủ cơ sở dữ liệu.
+Tự động lưu bản sao toàn bộ dữ liệu rương Ender theo định kỳ. <strong>Chỉ hỗ trợ SQLite</strong> - nếu dùng MySQL/MariaDB/PostgreSQL, hãy dùng công cụ sao lưu của chính máy chủ cơ sở dữ liệu.
 </template>
 
 <ConfigProperty name="enabled" value="true" type="boolean">
