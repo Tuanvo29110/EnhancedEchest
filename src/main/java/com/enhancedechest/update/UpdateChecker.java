@@ -20,9 +20,9 @@ public final class UpdateChecker {
             Pattern.compile("\"version_number\"\\s*:\\s*\"([^\"]+)\"");
 
     public static final String GITHUB_RELEASES =
-            "https://github.com/OpenVdra/EnhancedEChest/releases/latest";
+            "https://github.com/OpenVdra/EnhancedEchest/releases/latest";
     private static final String GITHUB_API =
-            "https://api.github.com/repos/OpenVdra/EnhancedEChest/releases/latest";
+            "https://api.github.com/repos/OpenVdra/EnhancedEchest/releases/latest";
     private static final Pattern GITHUB_TAG_PATTERN =
             Pattern.compile("\"tag_name\"\\s*:\\s*\"([^\"]+)\"");
     private static final Pattern GITHUB_HTML_URL_PATTERN =
@@ -49,6 +49,7 @@ public final class UpdateChecker {
     private void performCheck() {
         HttpClient client = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
+                .followRedirects(HttpClient.Redirect.NORMAL)
                 .build();
 
         String version = fetchModrinthVersion(client);
