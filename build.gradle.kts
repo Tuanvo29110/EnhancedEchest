@@ -35,7 +35,7 @@ dependencies {
     shade("org.mariadb.jdbc:mariadb-java-client:3.5.9")   // compatible with MySQL 5.7+ and 8.x
     shade("org.postgresql:postgresql:42.7.11")
     // Read-only driver for migrating from H2-backed AxVaults installs (matches AxVaults' H2 version).
-    shade("com.h2database:h2:2.1.214")
+    shade("com.h2database:h2:2.4.240")
     shade("com.tcoded:FoliaLib:0.5.2")
     shade("org.bstats:bstats-bukkit:3.2.1")
 
