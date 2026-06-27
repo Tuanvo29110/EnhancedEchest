@@ -51,7 +51,7 @@ Mỗi kho AxVaults được nhập vào rương EnhancedEchest có **cùng số 
 Việc nhập đọc trực tiếp cơ sở dữ liệu của AxVaults, nên cần lưu ý hai điều:
 
 - **Lưu AxVaults trước.** AxVaults giữ các kho đang mở trong bộ nhớ và chỉ ghi xuống cơ sở dữ liệu theo chu kỳ. Hãy chạy `/vaultadmin save` một lần để mọi kho được ghi xuống đĩa trước khi chuyển.
-- **Dùng SQLite, hoặc tắt AxVaults nếu dùng H2.** Cơ sở dữ liệu H2 mặc định của AxVaults bị khóa khi AxVaults đang chạy nên không thể đọc trực tiếp. Hãy đặt `database.type: sqlite` trong `AxVaults/config.yml` (tệp `data.db` của nó đọc được khi server đang chạy), hoặc tắt server nguồn trước nếu nó dùng H2. EnhancedEchest tự phát hiện tệp cơ sở dữ liệu AxVaults có trong `plugins/AxVaults`.
+- **AxVaults phải được đặt sang SQLite.** EnhancedEchest đọc tệp `data.db` (SQLite) của AxVaults, tệp này đọc được ngay cả khi server nguồn đang chạy. Nếu AxVaults của bạn đang dùng cơ sở dữ liệu mặc định, hãy đặt `database.type: sqlite` trong `AxVaults/config.yml` rồi khởi động lại server nguồn để nó tạo `data.db`, sau đó mới chuyển dữ liệu.
 
 ### Cách Chạy
 

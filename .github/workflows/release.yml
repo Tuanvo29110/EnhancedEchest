@@ -9,11 +9,6 @@ on:
   release:
     types: [ published ]
   workflow_dispatch:
-    inputs:
-      changelog:
-        description: "Release notes / changelog. Leave empty to auto-generate from commits."
-        required: false
-        type: string
 
 permissions:
   contents: write   # needed to create the tag/release and attach the built jar
@@ -56,21 +51,19 @@ jobs:
           echo "jar=$JAR" >> "$GITHUB_OUTPUT"
 
       # Resolve the changelog, in priority order:
-      #   1. the changelog typed into the "Run workflow" input (manual override);
-      #   2. the section for this version in CHANGELOG.md (the `## <version> - <date>`
+      #   1. the section for this version in CHANGELOG.md (the `## <version> - <date>`
       #      block, keep-a-changelog style) — this is the normal path: keep CHANGELOG.md
       #      up to date and the notes flow automatically;
-      #   3. the body of an already-published GitHub Release (UI publish);
-      #   4. a fallback line.
+      #   2. the body of an already-published GitHub Release (UI publish);
+      #   3. a fallback line.
       # Reused for the auto-created release, Modrinth, Hangar and Discord.
       - name: Resolve changelog
         id: changelog
         env:
           VERSION: ${{ steps.meta.outputs.version }}
-          INPUT_CHANGELOG: ${{ github.event.inputs.changelog }}
           RELEASE_BODY: ${{ github.event.release.body }}
         run: |
-          BODY="$INPUT_CHANGELOG"
+          BODY=""
           if [ -z "$BODY" ] && [ -f CHANGELOG.md ]; then
             # Print everything between `## <version> ...` and the next `## ` heading,
             # then strip leading/trailing blank lines.
@@ -184,12 +177,33 @@ jobs:
           platform_dependencies: |
             { "PAPER": ["1.21.11", "26.1", "26.1.1", "26.1.2", "26.2"] }
 
+      # Build the Discord embed body: the changelog followed by a download-links
+      # section. Modrinth isn't listed yet because the project page isn't public —
+      # add it here once it is. The GitHub link is the resolved release URL.
+      - name: Compose Discord message
+        id: discord
+        if: ${{ !cancelled() && steps.meta.outcome == 'success' }}
+        env:
+          CHANGELOG: ${{ steps.changelog.outputs.body }}
+          RELEASE_URL: ${{ steps.release.outputs.url }}
+        run: |
+          SPIGOT="https://www.spigotmc.org/resources/enhancedechest-double-echest-plugin-%E2%9C%A8-26-1-2-26-2-%EF%B8%8F.136442/"
+          HANGAR="https://hangar.papermc.io/Nighter/EnhancedEchest"
+          {
+            echo "description<<__DISCORD_EOF__"
+            echo "$CHANGELOG"
+            echo ""
+            echo "**📥 Download**"
+            echo "[Hangar]($HANGAR) · [Spigot]($SPIGOT) · [GitHub Release]($RELEASE_URL)"
+            echo "__DISCORD_EOF__"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Announce on Discord
         if: ${{ !cancelled() && steps.meta.outcome == 'success' }}
         uses: tsickert/discord-webhook@v6.0.0
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
           embed-title: "EnhancedEchest ${{ steps.meta.outputs.version }} released"
-          embed-description: ${{ steps.changelog.outputs.body }}
+          embed-description: ${{ steps.discord.outputs.description }}
           embed-url: ${{ steps.release.outputs.url }}
           embed-color: "5763719"

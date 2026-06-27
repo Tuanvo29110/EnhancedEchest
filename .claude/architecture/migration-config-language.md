@@ -11,10 +11,11 @@ join when `migration.enabled` (`JoinMigrationListener`), or manually with `/ee m
 ## Migration (`migration/AxVaultsReader` + `AxVaultsMigrationService`) — AxVaults
 
 Offline-capable import from the AxVaults plugin: `/ee migrate axvaults [<player>]` (`MigrateAxVaultsCommand`,
-runs on `DbExecutor`). `AxVaultsReader` opens the AxVaults DB in `plugins/AxVaults` directly — SQLite
-`data.db` (read-only, readable while the source server runs) or H2 `data.mv.db` (file-locked while AxVaults
-runs, so the source must be stopped or switched to SQLite); the shaded+relocated H2 driver
-(`com.enhancedechest.libs.h2`) handles the latter. The `axvaults_data.storage` blob is big-endian
+runs on `DbExecutor`). `AxVaultsReader` opens the AxVaults SQLite DB `data.db` in `plugins/AxVaults`
+directly (read-only, readable while the source server runs). AxVaults' default H2 backend (`data.mv.db`)
+is **not** supported — admins must switch AxVaults to `database.type: sqlite` first; if only `data.mv.db`
+is present the reader throws a clear "switch to SQLite" error (no H2 driver is shaded). The
+`axvaults_data.storage` blob is big-endian
 `[int slotCount]` then per slot `[ushort len][len bytes]`; each item's bytes are gzip-NBT **identical to
 Paper `ItemStack.serializeAsBytes`**, so each decodes via `ItemStack.deserializeBytes`. Each vault is
 written into the EE chest of the **same index** (`ensureChest`/`resize`+`saveChest`), sized up to a multiple

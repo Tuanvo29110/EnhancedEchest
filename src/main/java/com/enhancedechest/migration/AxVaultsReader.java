@@ -29,10 +29,9 @@ import java.util.UUID;
  * what Paper's {@link ItemStack#serializeAsBytes()} produces, so each one decodes via
  * {@link ItemStack#deserializeBytes(byte[])} (which also runs the DataFixerUpper across versions).
  *
- * <p>Supports both AxVaults file backends: SQLite ({@code data.db}) and H2 ({@code data.mv.db}).
- * SQLite is opened read-only so it can be read while the source server still holds the file; an H2
- * file is exclusively locked while AxVaults runs, so H2 migration requires the source server to be
- * stopped first.
+ * <p>Reads the SQLite backend ({@code data.db}) only, opened read-only so it can be read while the
+ * source server still holds the file. Installs running AxVaults' default H2 backend
+ * ({@code data.mv.db}) must switch AxVaults to {@code database.type: sqlite} before migrating.
  *
  * <p>Not thread-safe; create, use and {@link #close()} on a single thread (the migration runs on the
  * shared DB executor). Item (de)serialization is read-only against the frozen server registries and
@@ -56,21 +55,20 @@ public final class AxVaultsReader implements AutoCloseable {
         this.log = log;
     }
 
-    /** The detected backend name ("SQLite" or "H2"), for logging. */
+    /** The backend name ("SQLite"), for logging. */
     public String backend() {
         return backend;
     }
 
     /**
-     * Opens the AxVaults database found in {@code axVaultsFolder} (typically {@code plugins/AxVaults}).
-     * Prefers SQLite ({@code data.db}) when present, otherwise H2 ({@code data.mv.db}).
+     * Opens the AxVaults SQLite database ({@code data.db}) found in {@code axVaultsFolder} (typically
+     * {@code plugins/AxVaults}).
      *
-     * @throws IllegalStateException if no AxVaults database file is found in the folder
+     * @throws IllegalStateException if no readable AxVaults SQLite database is found in the folder
      * @throws Exception             if the driver is missing or the connection fails
      */
     public static AxVaultsReader open(Path axVaultsFolder, Logger log) throws Exception {
         Path sqlite = axVaultsFolder.resolve("data.db");
-        Path h2 = axVaultsFolder.resolve("data.mv.db");
 
         if (Files.exists(sqlite)) {
             Class.forName("org.sqlite.JDBC");
@@ -79,26 +77,14 @@ public final class AxVaultsReader implements AutoCloseable {
             return new AxVaultsReader(DriverManager.getConnection(url), "SQLite", log);
         }
 
-        if (Files.exists(h2)) {
-            loadH2Driver();
-            // Strip the ".mv.db" suffix: H2 URLs name the base file. Read-only, no file lock.
-            String base = h2.toAbsolutePath().toString();
-            base = base.substring(0, base.length() - ".mv.db".length());
-            String url = "jdbc:h2:file:" + base + ";ACCESS_MODE_DATA=r;FILE_LOCK=NO;IFEXISTS=TRUE";
-            return new AxVaultsReader(DriverManager.getConnection(url, "", ""), "H2", log);
+        if (Files.exists(axVaultsFolder.resolve("data.mv.db"))) {
+            throw new IllegalStateException("AxVaults is using its H2 backend (data.mv.db), which "
+                    + "EnhancedEchest cannot read. Set database.type: sqlite in AxVaults/config.yml "
+                    + "and restart the source server, then migrate from data.db.");
         }
 
-        throw new IllegalStateException("No AxVaults database found in " + axVaultsFolder
-                + " (looked for data.db / data.mv.db)");
-    }
-
-    /** Loads the relocated, shaded H2 driver; falls back to the unrelocated name for dev runs. */
-    private static void loadH2Driver() throws ClassNotFoundException {
-        try {
-            Class.forName("com.enhancedechest.libs.h2.Driver");
-        } catch (ClassNotFoundException e) {
-            Class.forName("org.h2.Driver");
-        }
+        throw new IllegalStateException("No AxVaults SQLite database found in " + axVaultsFolder
+                + " (looked for data.db)");
     }
 
     /** Reads and decodes every player's vaults, keyed by owner UUID and ordered by vault id. */

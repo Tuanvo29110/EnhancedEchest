@@ -51,7 +51,7 @@ Each AxVaults vault is imported into the EnhancedEchest chest with the **same nu
 The migration reads the AxVaults database directly, so two things matter:
 
 - **Save AxVaults first.** AxVaults keeps open vaults in memory and only writes them to its database periodically. Run `/vaultadmin save` once so every vault is flushed to disk before you migrate.
-- **Use SQLite, or stop AxVaults for H2.** AxVaults' default H2 database is locked while AxVaults is running, so it cannot be read live. Either set `database.type: sqlite` in `AxVaults/config.yml` (its `data.db` can be read while the server runs), or stop the source server first if it uses H2. EnhancedEchest auto-detects whichever AxVaults database file is present in `plugins/AxVaults`.
+- **AxVaults must be set to SQLite.** EnhancedEchest reads the AxVaults `data.db` file (SQLite), which can be read even while the source server runs. If your AxVaults is on its default database, set `database.type: sqlite` in `AxVaults/config.yml` and restart the source server so it creates `data.db`, then migrate.
 
 ### Running It
 

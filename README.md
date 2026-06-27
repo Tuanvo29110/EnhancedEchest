@@ -37,6 +37,14 @@ The output jar is placed in `build/libs/` and copied to `TestServer/plugins/` au
 
 Full configuration reference, command list, permission nodes, and database setup are available at [openvdra.github.io/EnhancedEchest](https://openvdra.github.io/EnhancedEchest/).
 
+## Statistics
+
+EnhancedEchest reports anonymous usage data to [bStats](https://bstats.org/plugin/bukkit/EnhancedEchest/32142). Collection is anonymous and can be turned off globally in `plugins/bStats/config.yml`.
+
+<a href="https://bstats.org/plugin/bukkit/EnhancedEchest/32142">
+  <img src="https://bstats.org/signatures/bukkit/EnhancedEchest.svg" alt="EnhancedEchest bStats charts" width="100%" />
+</a>
+
 ## License
 
 Licensed under the GNU General Public License v3.0. See [LICENSE](LICENSE) for details.
