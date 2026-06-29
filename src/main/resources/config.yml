@@ -10,6 +10,22 @@ enderchest:
   # Must be a multiple of 9, between 9 and 54. Invalid values are rounded to the nearest valid size.
   default-size: 54
 
+  # Which chest-management buttons players may use in the "Edit mode" menu (Rename / Choose icon / Sort).
+  # These are GLOBAL switches: they apply to every player the same way, not per-player and not per-chest.
+  # Turning one off simply hides its button from the menu; existing names/icons are kept, just no longer
+  # editable.
+  features:
+    # Let players give a chest a custom display name.
+    rename: true
+    # Let players pick an item to show as a chest's icon in the list.
+    icon: true
+    # Let players auto-sort a chest's contents: identical items are merged into full stacks and the
+    # whole chest is reordered by item type/name. Off by default.
+    sort: false
+    # Smallest gap between two sorts by the same player, so the Sort button can't be spammed (each sort
+    # re-reads and re-writes the chest). Time format: 20s, 5m, 1h, ... Set to 0s to disable the cooldown.
+    sort-cooldown: 10s
+
 permission-chests:
   # Grant ender chests from permissions of the form:
   #   enhancedechest.additional_amount.<count>.slot.<size>

@@ -16,6 +16,14 @@ public final class PluginConfig {
     // Ender chest
     private int defaultSize;
 
+    // Chest-management features (global toggles; read live by the dialogs, so volatile for cross-thread
+    // visibility after a /ee reload mutates them on the main thread).
+    private volatile boolean renameEnabled;
+    private volatile boolean iconEnabled;
+    private volatile boolean sortEnabled;
+    /** Minimum gap between two sorts by the same player, to keep the Sort button from being spammed. */
+    private volatile long sortCooldownMillis;
+
     // Permission-granted chests (enhancedechest.additional_amount.<count>.slot.<size>)
     private boolean permissionChestsEnabled;
 
@@ -58,6 +66,11 @@ public final class PluginConfig {
         locale = config.getString("language", "en_US");
 
         defaultSize = sanitizeSize(config.getInt("enderchest.default-size", 54));
+
+        renameEnabled      = config.getBoolean("enderchest.features.rename", true);
+        iconEnabled        = config.getBoolean("enderchest.features.icon", true);
+        sortEnabled        = config.getBoolean("enderchest.features.sort", false);
+        sortCooldownMillis = parseDuration(config.getString("enderchest.features.sort-cooldown", "10s"), "10s");
 
         permissionChestsEnabled = config.getBoolean("permission-chests.enabled", true);
 

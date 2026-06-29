@@ -72,6 +72,9 @@ Players personalize their chests straight from the in-game menu, no commands nee
 
 - <strong>Rename it</strong>: a named chest shows that name as its inventory title
 - <strong>Choose an icon</strong>: pick any item to represent the chest in the list, with a searchable item picker, or reset to the default ender-chest icon
+- <strong>Sort it</strong>: tidy the chest in one click — identical items are merged into full stacks and everything is reordered by item type (off by default; enable it under <code>enderchest.features.sort</code>)
+
+Each of these can be turned on or off server-wide under <code>enderchest.features</code> in <code>config.yml</code>. The toggles are global (they apply to every player) — see the <a href="/docs/configuration">Configuration</a> page.
 
 </FeatureCard>
 
@@ -84,7 +87,7 @@ Hand out chests by rank instead of by command. The permission <code>enhancedeche
 </FeatureCard>
 
 <FeatureCard icon="Eye" title="View Other Players' Chests">
-With <code>/ee view &lt;player&gt;</code> an admin can open any player's chest, online or offline. One chest opens directly; with several, a picker menu lets you choose which one. Grant <code>admin.view</code> for a read-only look, or add <code>admin.edit</code> to take and add items.
+With <code>/ee view &lt;player&gt;</code> an admin opens a player's chest, online or offline, in the same management menu the owner sees. One chest opens its menu directly; with several, a picker lets you choose. Grant <code>admin.view</code> for a read-only look, add <code>admin.edit</code> to take/add items and to rename, re-icon, or sort the chest, and add <code>admin.clear</code> for a <strong>Clear chest</strong> button (with a confirmation) that empties it.
 </FeatureCard>
 
 </CardGrid>

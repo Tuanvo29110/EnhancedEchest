@@ -19,6 +19,10 @@ chest:
   in-use: '{prefix}&fRương ender đó đang được sử dụng. Vui lòng thử lại sau giây lát.'
   # Action bar hiện cho quản trị viên chỉ được xem mà không được sửa rương người khác (không có quyền sửa).
   view-only: '&7Chỉ xem — bạn có thể xem rương này nhưng không thể thay đổi nội dung.'
+  # Hiện sau khi nút Sắp xếp dọn xong rương.
+  sorted: '{prefix}&fĐã sắp xếp rương.'
+  # Hiện khi bấm Sắp xếp lại trước khi hết thời gian chờ. {time} = thời gian còn lại, ví dụ "2s".
+  sort-cooldown: '{prefix}&fVui lòng đợi {time} trước khi sắp xếp lại.'
 
 migrate:
   no-players: '{prefix}&fKhông có người chơi nào trực tuyến.'

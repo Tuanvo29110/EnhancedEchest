@@ -67,6 +67,16 @@ For the full design, read [ARCHITECTURE.md](ARCHITECTURE.md). For user-facing do
   **and** PERM). The list marks the main chest with a gold `★` appended to its label (`gui.yml
   dialog.main-tag`); dialog buttons themselves are plain text. Don't reintroduce auto-primary — it breaks
   the "user explicitly chooses their main" model.
+- **Per-chest detail dialog & feature toggles** (`ChestDialogs.detailDialog` + `DetailContext`): one
+  dialog serves both the owner (`/eclist` edit mode) and an admin (`/ee view`); the `DetailContext` record
+  decides the button set and *which owner* every mutation targets (an admin's clicks edit the **target's**
+  chest). Appearance edits are gated by **global** config toggles `enderchest.features.{rename,icon,sort}`
+  (sort off by default; read live from the shared `PluginConfig`, fields `volatile`) **and** by edit rights
+  (owner always; admin needs `enhancedechest.admin.edit`). **Sort** (`ChestSpillService.sortChest`) is
+  dupe-safe like `clearChest` (force-close + `runExclusive`, merge-similar then reorder by material key) and
+  is per-clicker rate-limited by `enderchest.features.sort-cooldown` in `ChestOpener`. Don't split the admin
+  detail back into a separate dialog — it's intentionally the same path. See
+  [architecture/ui-dialogs.md](architecture/ui-dialogs.md).
 - **Permission-granted chests** (`ChestKind.PERM`, `kind = 2`): players are granted chests from
   `enhancedechest.additional_amount.<count>.slot.<size>` permissions (stacking, summed per size), gated by
   `permission-chests.enabled`. `PermissionChestService.reconcile` runs **on open** (via `ChestOpener`,

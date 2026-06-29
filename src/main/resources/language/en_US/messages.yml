@@ -19,6 +19,10 @@ chest:
   in-use: '{prefix}&fThat ender chest is currently in use. Please try again in a moment.'
   # Action bar shown to an admin who may view but not edit another player''s chest (no edit permission).
   view-only: '&7Read-only — you can view this chest but not change its contents.'
+  # Shown after the Sort button finishes tidying a chest.
+  sorted: '{prefix}&fChest sorted.'
+  # Shown when Sort is clicked again before its cooldown elapses. {time} = remaining time, e.g. "2s".
+  sort-cooldown: '{prefix}&fPlease wait {time} before sorting again.'
 
 migrate:
   no-players: '{prefix}&fNo players are online.'

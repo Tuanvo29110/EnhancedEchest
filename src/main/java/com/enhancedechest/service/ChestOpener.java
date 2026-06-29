@@ -1,11 +1,14 @@
 package com.enhancedechest.service;
 
+import com.enhancedechest.config.PluginConfig;
 import com.enhancedechest.gui.EnderChestHolder;
 import com.enhancedechest.gui.dialog.ChestDialogs;
+import com.enhancedechest.gui.dialog.ChestDialogs.DetailContext;
 import com.enhancedechest.lang.LanguageManager;
 import com.enhancedechest.model.ChestKind;
 import com.enhancedechest.model.ChestSummary;
 import com.enhancedechest.storage.EnderChestStorage;
+import com.enhancedechest.util.DurationFormat;
 import com.tcoded.folialib.FoliaLib;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -15,6 +18,7 @@ import org.slf4j.Logger;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Decides <i>what</i> to open for {@code /ec}, {@code /eclist}, right-click and the admin {@code /ee
@@ -41,6 +45,9 @@ public final class ChestOpener {
     /** Permission an admin needs to see and use the "Clear chest" button in the admin detail dialog. */
     private static final String ADMIN_CLEAR_PERMISSION = "enhancedechest.admin.clear";
 
+    /** Permission an admin needs to <i>edit</i> (rename / icon / sort) another player's chest while viewing. */
+    private static final String ADMIN_EDIT_PERMISSION = "enhancedechest.admin.edit";
+
     private final ChestSessionManager sessions;
     private final StorageGateway storageGateway;
     private final PlayerSettingsCache settings;
@@ -52,6 +59,10 @@ public final class ChestOpener {
     private final ChestDialogs dialogs;
     private final PermissionChestService permService;
     private final ChestSpillService spillService;
+    private final PluginConfig config;
+
+    /** Last time (epoch millis) each player sorted a chest, for the anti-spam Sort cooldown. */
+    private final ConcurrentHashMap<UUID, Long> lastSortAt = new ConcurrentHashMap<>();
 
     // Runtime-tunable via /ee reload (see setDefaultSize). volatile so the value written on the main
     // thread during a reload is visible to the async open threads that read it when bootstrapping.
@@ -61,7 +72,8 @@ public final class ChestOpener {
     public ChestOpener(ChestSessionManager sessions, StorageGateway storageGateway,
                        PlayerSettingsCache settings, EnderChestStorage storage, DbExecutor db,
                        LanguageManager lang, FoliaLib foliaLib, Logger logger, int defaultSize,
-                       PermissionChestService permService, ChestSpillService spillService) {
+                       PermissionChestService permService, ChestSpillService spillService,
+                       PluginConfig config) {
         this.sessions       = sessions;
         this.storageGateway = storageGateway;
         this.settings       = settings;
@@ -73,7 +85,8 @@ public final class ChestOpener {
         this.defaultSize    = defaultSize;
         this.permService    = permService;
         this.spillService   = spillService;
-        this.dialogs        = new ChestDialogs(this, storageGateway, settings, lang);
+        this.config         = config;
+        this.dialogs        = new ChestDialogs(this, storageGateway, settings, lang, config);
     }
 
     /**
@@ -312,19 +325,17 @@ public final class ChestOpener {
     }
 
     /**
-     * Shows the admin per-chest detail dialog (Open / Clear chest [Admin] / Back) for the target's chest.
-     * The "Clear chest" button is only built when the admin holds {@code enhancedechest.admin.clear}, so a
-     * view-only admin never sees it. Reachable from {@code /ee view} and the admin view-list dialog.
+     * Shows the per-chest detail dialog for the target's chest, in an admin context: same menu the owner
+     * sees, but mutations target the owner's chest. The appearance edits (rename / icon / sort) are built
+     * only when the admin holds {@code enhancedechest.admin.edit}; the Clear button only when they hold
+     * {@code enhancedechest.admin.clear} — so a view-only admin gets just Open / Back. Reachable from
+     * {@code /ee view} and the admin view-list dialog.
      */
     public void openAdminDetail(Player admin, String targetName, UUID target, int index) {
-        boolean canClear = admin.hasPermission(ADMIN_CLEAR_PERMISSION);
-        storageGateway.listChestsAsync(target).thenAccept(chests ->
-                foliaLib.getScheduler().runAtEntity(admin, task -> {
-                    if (!admin.isOnline()) return;
-                    chests.stream().filter(c -> c.index() == index).findFirst().ifPresentOrElse(
-                            c -> admin.showDialog(dialogs.adminDetailDialog(targetName, target, c, canClear)),
-                            () -> admin.sendMessage(lang.get("chest.not-found")));
-                })).exceptionally(e -> reportOpenFailure(admin, e));
+        DetailContext ctx = new DetailContext(target, targetName, false,
+                admin.hasPermission(ADMIN_EDIT_PERMISSION), false,
+                admin.hasPermission(ADMIN_CLEAR_PERMISSION), null);
+        showDetail(admin, ctx, index);
     }
 
     /** Shows the "are you sure?" confirmation before an admin clears a chest (guards the destructive wipe). */
@@ -365,10 +376,64 @@ public final class ChestOpener {
                 })).exceptionally(e -> reportOpenFailure(admin, e));
     }
 
-    /** Shows the per-chest detail dialog (Open / Rename / Set-main / Back). */
+    /** Shows the per-chest detail dialog for the player's own chest (Open / Rename / Icon / Sort / Set-main / Back). */
     public void openDetailDialog(Player player, int index) {
-        boolean canSetMain = canSetMain(player);
-        showChestDialog(player, index, chest -> dialogs.detailDialog(chest, canSetMain, null));
+        showDetail(player, selfContext(player, null), index);
+    }
+
+    /**
+     * Re-shows the detail dialog in an explicit context (own or admin), reloading the chest first. Used by
+     * the dialog callbacks (rename / icon / sort / set-main) to refresh after a mutation, so an admin's
+     * refresh stays an admin dialog and the owner's stays an owner dialog.
+     */
+    public void openDetailDialog(Player viewer, DetailContext ctx, int index) {
+        showDetail(viewer, ctx, index);
+    }
+
+    /** Builds the owner's detail context: full edit rights, set-main gated on the open permission. */
+    private DetailContext selfContext(Player player, @Nullable Location sourceBlock) {
+        return new DetailContext(player.getUniqueId(), null, true, true, canSetMain(player), false, sourceBlock);
+    }
+
+    /**
+     * Sorts a chest's contents (the Sort button), then re-shows the detail dialog. Per-player rate-limited
+     * by {@code enderchest.features.sort-cooldown}: a sort while still on cooldown is rejected with a chat
+     * notice and does no work, so the button can't be spammed (each sort re-reads and re-writes the chest).
+     * The cooldown is keyed on the clicking viewer, so an admin sorting players' chests is limited too.
+     */
+    public void sortChest(Player viewer, DetailContext ctx, int index) {
+        if (!config.isSortEnabled()) {
+            return;
+        }
+        long cooldown = config.getSortCooldownMillis();
+        long now = System.currentTimeMillis();
+        UUID viewerId = viewer.getUniqueId();
+        if (cooldown > 0) {
+            Long last = lastSortAt.get(viewerId);
+            if (last != null && now - last < cooldown) {
+                String remaining = DurationFormat.formatRemaining(cooldown - (now - last));
+                foliaLib.getScheduler().runAtEntity(viewer, t -> {
+                    if (viewer.isOnline()) viewer.sendMessage(lang.get("chest.sort-cooldown", "time", remaining));
+                });
+                return;
+            }
+        }
+        lastSortAt.put(viewerId, now);
+        spillService.sortChest(ctx.owner(), index).thenRun(() ->
+                foliaLib.getScheduler().runAtEntity(viewer, t -> {
+                    if (!viewer.isOnline()) return;
+                    viewer.sendMessage(lang.get("chest.sorted"));
+                    showDetail(viewer, ctx, index);
+                })).exceptionally(e -> reportOpenFailure(viewer, e));
+    }
+
+    /**
+     * Drops a player's sort-cooldown entry, called on quit so the {@link #lastSortAt} map stays bounded by
+     * the online-player count (it holds one timestamp per player who has sorted, and entries never expire
+     * on their own). Idempotent — a no-op for a player who never sorted.
+     */
+    public void clearSortCooldown(UUID playerId) {
+        lastSortAt.remove(playerId);
     }
 
     /**
@@ -379,23 +444,31 @@ public final class ChestOpener {
         return player.hasPermission(OPEN_GUI_PERMISSION);
     }
 
-    /** Shows the dedicated rename dialog for a chest. */
+    /** Shows the dedicated rename dialog for the player's own chest. */
     public void openRenameDialog(Player player, int index) {
-        showChestDialog(player, index, dialogs::renameDialog);
+        DetailContext ctx = selfContext(player, null);
+        showChestDialog(player, ctx.owner(), index, chest -> dialogs.renameDialog(chest, ctx));
     }
 
-    /** Loads the chest by index and shows a dialog built from it on the player's thread. */
-    private void showChestDialog(Player player, int index,
+    /**
+     * Reloads a chest (from {@code ctx.owner()}) and re-shows its detail dialog in the given context, on
+     * the viewer's thread. The single entry point for opening/refreshing the detail menu, owner or admin.
+     */
+    private void showDetail(Player viewer, DetailContext ctx, int index) {
+        showChestDialog(viewer, ctx.owner(), index, chest -> dialogs.detailDialog(chest, ctx));
+    }
+
+    /** Loads the chest by index (under {@code owner}) and shows a dialog built from it on the viewer's thread. */
+    private void showChestDialog(Player viewer, UUID owner, int index,
                                  java.util.function.Function<ChestSummary, io.papermc.paper.dialog.Dialog> builder) {
-        UUID uuid = player.getUniqueId();
-        storageGateway.listChestsAsync(uuid).thenAccept(chests ->
-                foliaLib.getScheduler().runAtEntity(player, task -> {
-                    if (!player.isOnline()) return;
+        storageGateway.listChestsAsync(owner).thenAccept(chests ->
+                foliaLib.getScheduler().runAtEntity(viewer, task -> {
+                    if (!viewer.isOnline()) return;
                     chests.stream().filter(c -> c.index() == index).findFirst().ifPresentOrElse(
-                            c -> player.showDialog(builder.apply(c)),
-                            () -> player.sendMessage(lang.get("chest.not-found")));
+                            c -> viewer.showDialog(builder.apply(c)),
+                            () -> viewer.sendMessage(lang.get("chest.not-found")));
                 })
-        ).exceptionally(e -> reportOpenFailure(player, e));
+        ).exceptionally(e -> reportOpenFailure(viewer, e));
     }
 
     /** Runs the given action on the player's entity thread (helper for command/dialog callbacks). */

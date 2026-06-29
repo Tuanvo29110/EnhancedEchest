@@ -3,6 +3,7 @@ version: '${version}'
 main: com.enhancedechest.EnhancedEchestPlugin
 bootstrapper: com.enhancedechest.EnhancedEchestBootstrap
 api-version: '1.21'
+folia-supported: true
 author: Nighter
 description: Gives every player a double-size ender chest backed by a persistent database
 
@@ -30,7 +31,7 @@ permissions:
     description: Use /ee transfer (move a player's chests onto another account)
     default: op
   enhancedechest.admin.view:
-    description: Open another player's chest (read-only by default)
+    description: Open another player's chest
     default: op
   enhancedechest.admin.edit:
     description: Take/add items while viewing another player's chest

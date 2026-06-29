@@ -41,7 +41,7 @@ com.enhancedechest
 │   ├── ChestSessionManager   dupe-safety core: shared live-inventory sessions registry, attach/detach,
 │   │                         pending-save tracking, runExclusive / forceCloseAll (one closed class)
 │   ├── ChestOpener           open routing (/ec, /eclist, right-click, /ee view) + dialog orchestration
-│   ├── ChestSpillService     item-moving ops: resize/delete spill, bulk delete, expiry disposal
+│   ├── ChestSpillService     item-moving ops: resize/delete spill, bulk delete, expiry disposal, clear, sort
 │   ├── PermissionChestService grant/revoke PERM chests from permissions; reconcile-on-open
 │   ├── StorageGateway        async wrappers over EnderChestStorage (list/create/rename/icon/primary)
 │   ├── PlayerSettingsCache   write-through settings cache, bounded by online players
@@ -49,7 +49,8 @@ com.enhancedechest
 ├── gui/
 │   ├── EnderChestHolder      InventoryHolder carrying owner, index, size, kind
 │   ├── EnderChestAnimator    ender chest block lid open/close animation (Lidded API)
-│   └── dialog/ChestDialogs   Paper Dialog API menus (list / detail / rename / icon) — isolated here
+│   └── dialog/ChestDialogs   Paper Dialog API menus (list / detail / rename / icon); one detail dialog
+│                             (DetailContext) serves owner + admin /ee view — isolated here
 ├── listener/
 │   ├── VanillaEnderChestListener    right-click → open custom GUI
 │   ├── EnderChestGuiListener        click/drag guards (read-only, temp take-only); on close → detach

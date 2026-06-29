@@ -2,6 +2,27 @@
 
 All notable changes to EnhancedEchest are recorded here, newest first.
 
+## 1.0.3 - 2026-06-29
+
+This release adds one-click chest sorting, lets you turn the chest customization buttons on or off server-wide, and gives admins the full chest menu while viewing another player.
+
+### Added
+
+- Added a **Sort** button to a chest's management menu that tidies it in one click: identical items are merged into full stacks and the whole chest is reordered by item type.
+  - Off by default. Turn it on with `enderchest.features.sort: true` in `config.yml`.
+  - Has a per-player cooldown (default `10s`, configurable with `enderchest.features.sort-cooldown`) so it can't be spammed.
+- Added server-wide on/off switches under `enderchest.features` in `config.yml` for the chest customization buttons. Each switch applies to every player the same way.
+  - `rename` (default on): show or hide the **Rename** button.
+  - `icon` (default on): show or hide the **Choose icon** button.
+  - `sort` (default off): show or hide the **Sort** button.
+
+### Changed
+
+- `/ee view <player>` now opens the **same** management menu the chest's owner sees, instead of a stripped-down view-only one:
+  - Admins with `enhancedechest.admin.edit` can now **Rename**, **Choose icon**, and **Sort** the chest they are viewing (these follow the same `enderchest.features` switches).
+  - The **Clear chest** button now lives in that same menu, so everything is in one place.
+  - A view-only admin (`enhancedechest.admin.view` only) still sees just Open and Back.
+
 ## 1.0.2 - 2026-06-27
 
 This release focuses on importing existing data from other vault plugins, and adds an account-transfer command plus an admin tool to empty a chest.

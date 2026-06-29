@@ -8,6 +8,7 @@ import com.enhancedechest.serialization.ContainerCodec;
 import com.enhancedechest.storage.EnderChestStorage;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -120,6 +121,86 @@ public final class ChestSpillService {
                     return null;
                 }));
     }
+
+    /**
+     * Sorts a chest's contents in place: identical items are merged into full stacks and everything is
+     * reordered by item type (then by descending stack size), packed from the first slot. Force-closes
+     * every viewer's GUI first (so the live session can't re-save the old order over the sort), then runs
+     * the load-sort-save exclusively per (owner, index) so the swap is dupe-safe. A no-op for a missing or
+     * empty chest. The chest's size, name, icon and kind are untouched — only the item layout changes.
+     */
+    public CompletableFuture<Void> sortChest(UUID owner, int index) {
+        return sessions.forceCloseAll(owner, index).thenCompose(v ->
+                sessions.runExclusive(owner, index, () -> {
+                    EnderChestData data = storage.loadChest(owner, index);
+                    if (data == null || data.containerData() == null || data.containerData().length == 0) {
+                        return null;
+                    }
+                    ItemStack[] sorted = sortItems(decodeAll(data), data.size());
+                    storage.saveChest(owner, index, codec.encode(sorted));
+                    return null;
+                }));
+    }
+
+    /**
+     * Builds the sorted layout for a chest of {@code size} slots: collects every non-empty stack, merges
+     * similar stacks up to their max size, sorts the result by material key then descending amount, and
+     * packs them from slot 0. Merging only ever reduces the slot count, so the result always fits in the
+     * original size.
+     */
+    private static ItemStack[] sortItems(ItemStack[] items, int size) {
+        // Only the chest's real slots (0..size) hold reachable items; anything decoded beyond that is a
+        // phantom the live inventory never loads, so ignoring it keeps the merged count <= size and means
+        // the pack loop below can never drop a reachable item.
+        List<ItemStack> stacks = new ArrayList<>();
+        int limit = Math.min(size, items.length);
+        for (int i = 0; i < limit; i++) {
+            if (!isEmpty(items[i])) stacks.add(items[i].clone());
+        }
+        List<ItemStack> merged = mergeSimilar(stacks);
+        merged.sort(SORT_ORDER);
+
+        ItemStack[] result = new ItemStack[size];
+        Arrays.fill(result, ItemStack.empty());
+        for (int i = 0; i < merged.size() && i < size; i++) {
+            result[i] = merged.get(i);
+        }
+        return result;
+    }
+
+    /**
+     * Combines stacks that {@link ItemStack#isSimilar(ItemStack) match} (same type and metadata) into full
+     * stacks, respecting each item's max stack size. Items with NBT (enchantments, custom names, …) only
+     * merge with truly identical items, so nothing is ever lost or mixed across distinct items.
+     */
+    private static List<ItemStack> mergeSimilar(List<ItemStack> stacks) {
+        List<ItemStack> out = new ArrayList<>();
+        for (ItemStack stack : stacks) {
+            int remaining = stack.getAmount();
+            int max = stack.getMaxStackSize();
+            for (ItemStack existing : out) {
+                if (remaining <= 0) break;
+                if (existing.getAmount() < max && existing.isSimilar(stack)) {
+                    int move = Math.min(max - existing.getAmount(), remaining);
+                    existing.setAmount(existing.getAmount() + move);
+                    remaining -= move;
+                }
+            }
+            while (remaining > 0) {
+                int take = Math.min(max, remaining);
+                ItemStack copy = stack.clone();
+                copy.setAmount(take);
+                out.add(copy);
+                remaining -= take;
+            }
+        }
+        return out;
+    }
+
+    /** Sort order: group by material key (alphabetical), fuller stacks first within a group. */
+    private static final Comparator<ItemStack> SORT_ORDER =
+            Comparator.comparing((ItemStack it) -> it.getType().getKey().toString())
+                    .thenComparing(Comparator.comparingInt(ItemStack::getAmount).reversed());
 
     /**
      * Bulk-removes the {@code count} newest (highest-index) NORMAL chests a player owns, spilling (or

@@ -50,6 +50,9 @@ dialog:
   rename-desc: '<white>Give this chest a custom display name.'
   choose-icon: '<white>Choose icon'
   choose-icon-desc: '<white>Pick an item to show as this chest''s icon in the list.'
+  # Sort button — only shown when enderchest.features.sort is enabled in config.yml.
+  sort: '<white>Sort'
+  sort-desc: '<white>Merge identical items into full stacks and reorder this chest by item type.'
   # Returns to the previous dialog; reused by the icon picker.
   back: '<white>Back'
 

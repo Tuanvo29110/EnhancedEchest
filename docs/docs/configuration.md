@@ -34,6 +34,22 @@ Slot count of the chest that is auto-created the first time a player ever opens 
 
 </ConfigProperty>
 
+<ConfigProperty name="features.rename" value="true" type="boolean">
+Whether players may give a chest a custom display name from the <strong>Edit mode</strong> menu. Turning this off hides the <strong>Rename</strong> button; chests that already have a name keep it. This is a <strong>global</strong> switch — it applies to every player the same way.
+</ConfigProperty>
+
+<ConfigProperty name="features.icon" value="true" type="boolean">
+Whether players may pick an item to show as a chest's icon in the list. Turning this off hides the <strong>Choose icon</strong> button; chests that already have an icon keep it. Global switch.
+</ConfigProperty>
+
+<ConfigProperty name="features.sort" value="false" type="boolean">
+Whether players may auto-sort a chest from the <strong>Edit mode</strong> menu. When on, a <strong>Sort</strong> button appears that merges identical items into full stacks and reorders the whole chest by item type. Off by default. Global switch.
+</ConfigProperty>
+
+<ConfigProperty name="features.sort-cooldown" value="10s" type="string">
+Smallest gap between two sorts by the same player, so the <strong>Sort</strong> button can't be spammed (each sort re-reads and re-writes the chest). Time format: <code>20s</code>, <code>5m</code>, <code>1h</code>, … Set to <code>0s</code> to remove the cooldown. Only used when <code>features.sort</code> is on.
+</ConfigProperty>
+
 </ConfigGroup>
 
 <ConfigGroup name="permission-chests">
@@ -138,6 +154,13 @@ enderchest:
   # Slot count of the chest auto-created the first time a player opens their ender chest.
   # Must be a multiple of 9, between 9 and 54.
   default-size: 54
+
+  # Server-wide switches for the "Edit mode" buttons (Rename / Choose icon / Sort).
+  features:
+    rename: true
+    icon: true
+    sort: false
+    sort-cooldown: 10s
 
 permission-chests:
   enabled: true

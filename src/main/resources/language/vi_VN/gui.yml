@@ -50,6 +50,9 @@ dialog:
   rename-desc: '<white>Đặt tên hiển thị tùy chỉnh cho rương này.'
   choose-icon: '<white>Chọn biểu tượng'
   choose-icon-desc: '<white>Chọn một vật phẩm làm biểu tượng cho rương này trong danh sách.'
+  # Nút Sắp xếp — chỉ hiện khi enderchest.features.sort được bật trong config.yml.
+  sort: '<white>Sắp xếp'
+  sort-desc: '<white>Gộp các vật phẩm giống nhau thành stack và sắp xếp lại rương theo loại vật phẩm.'
   # Quay lại hộp thoại trước; dùng lại cho bộ chọn biểu tượng.
   back: '<white>Quay lại'
 

@@ -97,7 +97,7 @@ public final class EnhancedEchestPlugin extends JavaPlugin {
                 pluginConfig.isPermissionChestsEnabled(), pluginConfig.getDefaultSize());
         chestOpener    = new ChestOpener(sessionManager, storageGateway, settingsCache, storage,
                 dbExecutor, languageManager, foliaLib, getSLF4JLogger(), pluginConfig.getDefaultSize(),
-                permissionChestService, spillService);
+                permissionChestService, spillService, pluginConfig);
 
         migrationService  = new MigrationService(storage, codec, getSLF4JLogger());
         axVaultsMigrationService = new AxVaultsMigrationService(storage, codec, getSLF4JLogger(),
@@ -123,7 +123,7 @@ public final class EnhancedEchestPlugin extends JavaPlugin {
         pm.registerEvents(new EnderChestGuiListener(sessionManager, foliaLib, languageManager, pluginConfig), this);
         pm.registerEvents(new PlayerQuitListener(sessionManager, foliaLib), this);
         pm.registerEvents(new JoinMigrationListener(pluginConfig, migrationService), this);
-        pm.registerEvents(new PlayerSettingsListener(settingsCache), this);
+        pm.registerEvents(new PlayerSettingsListener(settingsCache, chestOpener), this);
 
         // Preload settings for players already online (a /reload or hot-load fires no join event for
         // them); without this their first dialog open would fall back to a DB read each time.

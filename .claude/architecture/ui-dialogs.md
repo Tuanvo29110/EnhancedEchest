@@ -2,17 +2,46 @@
 
 ## Dialog API (`gui/dialog/ChestDialogs`)
 
-Isolates Paper's experimental Dialog API so a breaking change is contained to one file. Three dialogs:
+Isolates Paper's experimental Dialog API so a breaking change is contained to one file. Dialogs:
 
 - **list** — one button per owned chest → opens the detail dialog. Marks the main with a gold `★`
   (`gui.yml dialog.main-tag`). Carries the edit-mode checkbox (see below).
-- **detail** — Open / Rename / Set-as-main / Back (temp chests show only Open / Back, plus an
-  "expires in" snapshot on the Open button).
-- **rename** — text input + Save / Cancel (separate dialog, no inline input on detail).
-- The icon picker is a single scrollable multi-action grid with a search input.
-- **admin view list** (`adminViewListDialog`) — one Open button per chest for `/ee view <player> [list]`,
-  opening the *target's* chest via `adminOpen`. No edit-mode/rename/set-main (those are owner-only); a
-  plain Close exit button. Title shows the owner's name (`gui.yml dialog.admin-list-title`).
+- **detail** (`detailDialog(chest, DetailContext)`) — Open / Set-as-main / Rename / Choose icon / Sort /
+  (admin) Clear / Back. A **single** dialog shared by the owner and an admin (`/ee view`); the
+  `DetailContext` record decides the button set and *which owner* every mutation targets. Temp chests show
+  only Open / (Clear) / Back, plus an "expires in" snapshot.
+- **rename** (`renameDialog(chest, ctx)`) — text input + Save / Cancel (separate dialog, no inline input).
+- The icon picker (`iconPickerDialog(chest, ctx, filter)`) is a single scrollable multi-action grid with a
+  search input.
+- **admin view list** (`adminViewListDialog`) — one button per chest for `/ee view <player> [list]`,
+  opening the per-chest **detail** dialog for the *target* via `openAdminDetail`. Plain Close exit button;
+  title shows the owner's name (`gui.yml dialog.admin-list-title`).
+- **admin clear confirm** (`adminClearConfirmDialog`) — yes/no gate before `ChestSpillService.clearChest`.
+
+### `DetailContext` (owner vs. admin, feature gating)
+
+`ChestDialogs.DetailContext(owner, ownerName, self, canEdit, canSetMain, canClear, sourceBlock)` collapses
+the old separate owner/admin detail dialogs into one path:
+
+- **`owner`** — every storage mutation (rename, icon, sort, set-main) targets this UUID, *not* the clicker.
+  That is how an admin edits another player's chest. `self`/`openDetailDialog(player,int)` builds a
+  self-context (`owner = player`); `openAdminDetail` builds an admin-context (`owner = target`).
+- **`self`** — picks Open routing (`openChest` vs. `adminOpen`) and Back routing (own list vs.
+  `openAdminViewList`).
+- **`canEdit`** — gates the appearance edits. `true` for the owner; for an admin it is
+  `hasPermission(enhancedechest.admin.edit)`. Each edit is **also** gated by a global config toggle:
+  Rename → `enderchest.features.rename`, Choose icon → `…features.icon`, Sort → `…features.sort` (read live
+  from `PluginConfig`, which `ChestDialogs` holds a reference to — `/ee reload` mutates it in place; the
+  three flags are `volatile`).
+- **`canSetMain`** — owner-only (the open permission); always `false` for admins.
+- **`canClear`** — admin Clear button, `hasPermission(enhancedechest.admin.clear)`; routes through the
+  confirm dialog.
+
+**Sort** is a server action, not a `show_dialog`: the button calls `ChestOpener.sortChest(viewer, ctx,
+index)`, which enforces a per-clicker cooldown (`enderchest.features.sort-cooldown`, rejected with
+`chest.sort-cooldown`) then calls `ChestSpillService.sortChest(owner, index)` — force-close all viewers +
+`runExclusive` load→merge-similar→reorder-by-material-key→save (dupe-safe, mirrors `clearChest`). On
+success it sends `chest.sorted` and re-pushes the detail dialog.
 
 Navigation avoids cursor recentering: forward transitions use a client-side
 `DialogAction.staticAction(ClickEvent.showDialog(child))` (child dialogs built first so parents can

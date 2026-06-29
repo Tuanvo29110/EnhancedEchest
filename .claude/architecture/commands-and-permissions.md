@@ -75,9 +75,9 @@ Opens a target player's chest for the admin by joining the **shared session** (`
 the admin sees — and edits — the *same* inventory the owner has open. No dupe is possible (see
 [concurrency-and-dupe-safety.md](concurrency-and-dupe-safety.md)).
 
-Every entry point funnels through the **admin detail dialog** (`ChestDialogs.adminDetailDialog` via
-`ChestOpener.openAdminDetail`) — Open / Clear chest \[Admin\] / Back — so the admin-only Clear button has a
-home and the flow mirrors the owner's list→detail:
+Every entry point funnels through the **shared detail dialog** (`ChestDialogs.detailDialog` with an
+admin `DetailContext`, via `ChestOpener.openAdminDetail`) — the *same* menu the owner sees, but with
+mutations retargeted to the owner's UUID, so the flow mirrors the owner's list→detail:
 
 - **No argument** — the command lists the target's chests and routes: 0 → `admin.view-no-chests`,
   1 → the **detail dialog** for that chest, 2+ → the **admin picker dialog**
@@ -88,11 +88,13 @@ home and the flow mirrors the owner's list→detail:
   otherwise).
 - **Offline owners are supported** — the admin becomes the sole viewer; the chest persists on close.
 
-The picker and detail dialogs are **view-only metadata**: open + clear only (no edit-mode/rename/set-main,
-which are owner operations) — see [ui-dialogs.md](ui-dialogs.md). The **Clear chest** button is built only
-when the admin holds `enhancedechest.admin.clear`, carries a red `(Admin)` tag, and routes through a
-confirmation (`adminClearConfirmDialog`) before `ChestSpillService.clearChest` (force-close + `runExclusive`
-+ `storage.clearChestContents` → sets `container_data = NULL`).
+The admin's button set is gated by their permissions (see `DetailContext` in [ui-dialogs.md](ui-dialogs.md)):
+Open + Back always; **Rename / Choose icon / Sort** when the admin holds `enhancedechest.admin.edit`
+(and the matching global feature toggle is on); **Clear chest** when they hold `enhancedechest.admin.clear`.
+A view-only admin (`admin.view` only) therefore gets just Open / Back. "Set as main" stays owner-only. The
+**Clear chest** button carries a red `(Admin)` tag and routes through a confirmation
+(`adminClearConfirmDialog`) before `ChestSpillService.clearChest` (force-close + `runExclusive` +
+`storage.clearChestContents` → sets `container_data = NULL`).
 
 ### `/ee transfer` (`ChestTransferCommand` / `ChestTransferService`)
 
@@ -136,7 +138,7 @@ enhancedechest.admin.resize
 enhancedechest.admin.delete
 enhancedechest.admin.transfer     move a player's NORMAL chests onto another account (/ee transfer)
 enhancedechest.admin.view         open another player's chest (read-only by default)
-enhancedechest.admin.edit         additionally take/add items while viewing
+enhancedechest.admin.edit         additionally take/add items, and rename/icon/sort the chest, while viewing
 enhancedechest.admin.clear        show/use the Clear chest button in the /ee view detail dialog
 ```
 

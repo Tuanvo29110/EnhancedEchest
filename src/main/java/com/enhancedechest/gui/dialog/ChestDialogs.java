@@ -1,5 +1,6 @@
 package com.enhancedechest.gui.dialog;
 
+import com.enhancedechest.config.PluginConfig;
 import com.enhancedechest.lang.LanguageManager;
 import com.enhancedechest.model.ChestKind;
 import com.enhancedechest.model.ChestSummary;
@@ -65,14 +66,38 @@ public final class ChestDialogs {
     private final StorageGateway storageGateway;
     private final PlayerSettingsCache settings;
     private final LanguageManager lang;
+    private final PluginConfig config;
 
     public ChestDialogs(ChestOpener opener, StorageGateway storageGateway,
-                        PlayerSettingsCache settings, LanguageManager lang) {
+                        PlayerSettingsCache settings, LanguageManager lang, PluginConfig config) {
         this.opener = opener;
         this.storageGateway = storageGateway;
         this.settings = settings;
         this.lang = lang;
+        this.config = config;
     }
+
+    /**
+     * The owner/permission context a per-chest detail dialog operates in. The same dialog serves the chest
+     * owner and an admin viewing someone else's chest ({@code /ee view}); this record carries everything
+     * that differs between those cases, so the dialog itself stays a single code path.
+     *
+     * <p>All storage mutations (rename, icon, sort, set-main) target {@link #owner}, <i>not</i> the
+     * clicking viewer — that is how an admin edits another player's chest. {@link #self} decides Open and
+     * Back routing (own list vs. the admin view list); {@link #canEdit} gates the appearance edits
+     * (rename / icon / sort); {@link #canSetMain} gates "set as main" (owner-only); {@link #canClear} gates
+     * the admin Clear button.
+     *
+     * @param owner       whose chest these operations target (the clicker for self, the target for admin)
+     * @param ownerName   display name of {@code owner}, used for admin Back navigation (null for self)
+     * @param self        true when the viewer owns these chests
+     * @param canEdit     whether the appearance edits (rename / icon / sort) may be shown
+     * @param canSetMain  whether "set as main" may be shown (owner-only, gated on the open permission)
+     * @param canClear    whether the admin Clear button may be shown (gated on the clear permission)
+     * @param sourceBlock owning ender-chest block for the lid animation on Open (self, right-click), or null
+     */
+    public record DetailContext(UUID owner, @Nullable String ownerName, boolean self, boolean canEdit,
+                                boolean canSetMain, boolean canClear, @Nullable Location sourceBlock) {}
 
     /**
      * Top-level list: one button per chest, plus an in-dialog "edit mode" checkbox.
@@ -124,8 +149,10 @@ public final class ChestDialogs {
                             settings.setEditModeAsync(p.getUniqueId(), editing);
                         }
                         if (editing) {
+                            DetailContext ctx = new DetailContext(p.getUniqueId(), null, true, true,
+                                    canSetMain, false, sourceBlock);
                             opener.runForPlayer(p, () -> {
-                                if (p.isOnline()) p.showDialog(detailDialog(chest, canSetMain, sourceBlock));
+                                if (p.isOnline()) p.showDialog(detailDialog(chest, ctx));
                             });
                         } else {
                             opener.openChest(p, index, sourceBlock);
@@ -206,48 +233,6 @@ public final class ChestDialogs {
     }
 
     /**
-     * Admin per-chest detail: Open, an admin-only Clear chest, and Back. Unlike the owner's
-     * {@link #detailDialog} there is no rename / set-main / icon (those are owner operations); an admin
-     * only opens the contents or wipes them.
-     *
-     * <p>The Clear button is built <b>only</b> when {@code canClear} is true (the admin holds
-     * {@code enhancedechest.admin.clear}), and its label carries a red {@code (Admin)} tag so it reads as
-     * a privileged action. It forwards to a confirmation dialog rather than wiping immediately.
-     *
-     * @param targetName display name of the chest's owner (for titles and Back navigation)
-     * @param target     UUID of the owner; passed to {@code adminOpen} / clear when a button is clicked
-     * @param canClear   whether to show the Clear chest button (gated on the clear permission)
-     */
-    public Dialog adminDetailDialog(String targetName, UUID target, ChestSummary chest, boolean canClear) {
-        int index = chest.index();
-        List<ActionButton> buttons = new ArrayList<>(3);
-
-        buttons.add(ActionButton.create(lang.getGui("dialog.open"), lang.getGui("dialog.open-desc"), BUTTON_WIDTH,
-                click((view, audience) -> {
-                    if (audience instanceof Player p) opener.adminOpen(p, target, index);
-                })));
-
-        if (canClear) {
-            buttons.add(ActionButton.create(lang.getGui("dialog.admin-clear"), lang.getGui("dialog.admin-clear-desc"),
-                    BUTTON_WIDTH, click((view, audience) -> {
-                        if (audience instanceof Player p) opener.openAdminClearConfirm(p, targetName, target, index);
-                    })));
-        }
-
-        buttons.add(ActionButton.create(lang.getGui("dialog.back"), null, BUTTON_WIDTH,
-                click((view, audience) -> {
-                    if (audience instanceof Player p) opener.openAdminViewList(p, targetName, target);
-                })));
-
-        Component title = withIcon(chest, lang.getChestLabel(index, chest.customName(), chest.kind()));
-        return Dialog.create(builder -> builder.empty()
-                .base(DialogBase.builder(title)
-                        .body(List.of(detailBody(chest)))
-                        .build())
-                .type(DialogType.multiAction(buttons, null, 1)));
-    }
-
-    /**
      * Confirmation gate for the admin Clear chest action: a red warning body, a Confirm button (also
      * tagged {@code (Admin)}) that performs the wipe, and Cancel that returns to the detail dialog. The
      * wipe is permanent, so it is never done on a single click.
@@ -288,57 +273,87 @@ public final class ChestDialogs {
     }
 
     /**
-     * Per-chest detail: Open / Set-as-main / Rename / Choose icon / Back.
+     * Per-chest detail menu, shared by the owner ({@code /eclist} edit mode) and an admin ({@code /ee
+     * view}). The button set is decided by {@code ctx}: Open is always present; appearance edits (Rename /
+     * Choose icon / Sort) appear when {@link DetailContext#canEdit} is set <i>and</i> the matching feature
+     * toggle is on; "Set as main" appears for the owner only; the admin Clear button appears when
+     * {@link DetailContext#canClear} is set. All mutations target {@code ctx.owner()}, so an admin's clicks
+     * edit the <i>target's</i> chest, never their own.
      *
-     * @param canSetMain  whether to show the "set as main" button; hidden for viewers without the
-     *                    open-by-command permission, for whom a main chest is meaningless
-     * @param sourceBlock ender chest block this menu was opened from, or null when opened by command;
-     *                    passed to the inventory open so the lid close animation fires on close
+     * <p>Temp chests are transient overflow holders — no appearance edits or main flag, only Open (and
+     * Clear / Back as permitted).
      */
-    public Dialog detailDialog(ChestSummary chest, boolean canSetMain, @Nullable Location sourceBlock) {
+    public Dialog detailDialog(ChestSummary chest, DetailContext ctx) {
         int index = chest.index();
         boolean temp = chest.kind() == ChestKind.TEMP;
-        List<ActionButton> buttons = new ArrayList<>(4);
+        UUID owner = ctx.owner();
+        List<ActionButton> buttons = new ArrayList<>(6);
 
-        // Open first — the primary action, and the most common reason to be here.
+        // Open first — the primary action, and the most common reason to be here. The owner opens their own
+        // chest (with the lid animation); an admin joins the target's shared session via adminOpen.
         buttons.add(ActionButton.create(lang.getGui("dialog.open"), lang.getGui("dialog.open-desc"), BUTTON_WIDTH,
                 click((view, audience) -> {
-                    if (audience instanceof Player p) opener.openChest(p, index, sourceBlock);
+                    if (!(audience instanceof Player p)) return;
+                    if (ctx.self()) opener.openChest(p, index, ctx.sourceBlock());
+                    else opener.adminOpen(p, owner, index);
                 })));
 
-        // Temp chests are transient overflow holders: no main flag, no customisation. Only Open + Back.
+        // Temp chests are transient overflow holders: no main flag, no customisation. Only Open + (Clear) + Back.
         if (!temp) {
-            // Set as main / Unset main — the highest-impact toggle (changes what /ec opens), so it sits
-            // right after Open. Mutates data, so it re-queries and is re-pushed from the server.
-            if (canSetMain && !chest.primary()) {
+            // Set as main / Unset main — owner-only (a main only matters for the owner's /ec). Highest-impact
+            // toggle, so it sits right after Open. Mutates data, so it re-queries and is re-pushed.
+            if (ctx.canSetMain() && !chest.primary()) {
                 buttons.add(ActionButton.create(lang.getGui("dialog.set-main"), lang.getGui("dialog.set-main-desc"),
                         BUTTON_WIDTH, click((view, audience) -> {
                             if (!(audience instanceof Player p)) return;
-                            storageGateway.setPrimaryAsync(p.getUniqueId(), index)
-                                    .thenRun(() -> opener.openDetailDialog(p, index));
+                            storageGateway.setPrimaryAsync(owner, index)
+                                    .thenRun(() -> opener.openDetailDialog(p, ctx, index));
                         })));
-            } else if (canSetMain && chest.primary()) {
+            } else if (ctx.canSetMain() && chest.primary()) {
                 buttons.add(ActionButton.create(lang.getGui("dialog.unset-main"), lang.getGui("dialog.unset-main-desc"),
                         BUTTON_WIDTH, click((view, audience) -> {
                             if (!(audience instanceof Player p)) return;
-                            storageGateway.clearPrimaryAsync(p.getUniqueId())
-                                    .thenRun(() -> opener.openDetailDialog(p, index));
+                            storageGateway.clearPrimaryAsync(owner)
+                                    .thenRun(() -> opener.openDetailDialog(p, ctx, index));
                         })));
             }
 
-            // Appearance edits grouped together: Rename then Choose icon. Both forward in-place
-            // (client-side show_dialog), so they never recentre the cursor. Choose icon's picker has a
-            // "Default" button to drop back to the plain ender-chest icon, so no separate clear button.
-            buttons.add(ActionButton.create(lang.getGui("dialog.rename"), lang.getGui("dialog.rename-desc"), BUTTON_WIDTH,
-                    DialogAction.staticAction(ClickEvent.showDialog(renameDialog(chest)))));
-            buttons.add(ActionButton.create(lang.getGui("dialog.choose-icon"), lang.getGui("dialog.choose-icon-desc"),
-                    BUTTON_WIDTH, DialogAction.staticAction(ClickEvent.showDialog(iconPickerDialog(chest, "")))));
+            // Appearance edits, each behind its global feature toggle (config) and the viewer's edit right.
+            // Rename / Choose icon forward in-place (client-side show_dialog) so they never recentre the
+            // cursor; Sort is a server action (it re-reads/re-writes the chest, then re-pushes the menu).
+            if (ctx.canEdit() && config.isRenameEnabled()) {
+                buttons.add(ActionButton.create(lang.getGui("dialog.rename"), lang.getGui("dialog.rename-desc"),
+                        BUTTON_WIDTH, DialogAction.staticAction(ClickEvent.showDialog(renameDialog(chest, ctx)))));
+            }
+            if (ctx.canEdit() && config.isIconEnabled()) {
+                buttons.add(ActionButton.create(lang.getGui("dialog.choose-icon"), lang.getGui("dialog.choose-icon-desc"),
+                        BUTTON_WIDTH, DialogAction.staticAction(ClickEvent.showDialog(iconPickerDialog(chest, ctx, "")))));
+            }
+            if (ctx.canEdit() && config.isSortEnabled()) {
+                buttons.add(ActionButton.create(lang.getGui("dialog.sort"), lang.getGui("dialog.sort-desc"),
+                        BUTTON_WIDTH, click((view, audience) -> {
+                            if (audience instanceof Player p) opener.sortChest(p, ctx, index);
+                        })));
+            }
         }
 
-        // Back returns to the list in edit mode — the detail dialog is only reachable from there.
+        // Admin-only Clear: a red (Admin)-tagged button routing through a confirmation before wiping. Shown
+        // for any chest kind (overflow temp chests can be cleared too), gated on the clear permission.
+        if (ctx.canClear()) {
+            buttons.add(ActionButton.create(lang.getGui("dialog.admin-clear"), lang.getGui("dialog.admin-clear-desc"),
+                    BUTTON_WIDTH, click((view, audience) -> {
+                        if (audience instanceof Player p) {
+                            opener.openAdminClearConfirm(p, ctx.ownerName(), owner, index);
+                        }
+                    })));
+        }
+
+        // Back: the owner returns to their list in edit mode; an admin returns to the admin view list.
         buttons.add(ActionButton.create(lang.getGui("dialog.back"), null, BUTTON_WIDTH,
                 click((view, audience) -> {
-                    if (audience instanceof Player p) opener.openListDialog(p, true, sourceBlock);
+                    if (!(audience instanceof Player p)) return;
+                    if (ctx.self()) opener.openListDialog(p, true, ctx.sourceBlock());
+                    else opener.openAdminViewList(p, ctx.ownerName(), owner);
                 })));
 
         Component title = withIcon(chest, lang.getChestLabel(index, chest.customName(), chest.kind()));
@@ -362,8 +377,9 @@ public final class ChestDialogs {
      *
      * @param filter case-insensitive name filter ("" = whole catalog)
      */
-    public Dialog iconPickerDialog(ChestSummary chest, String filter) {
+    public Dialog iconPickerDialog(ChestSummary chest, DetailContext ctx, String filter) {
         int index = chest.index();
+        UUID owner = ctx.owner();
         List<IconCatalog.Entry> results = IconCatalog.search(filter);
 
         List<ActionButton> buttons = new ArrayList<>(results.size() + 2);
@@ -375,15 +391,15 @@ public final class ChestDialogs {
                     String typed = view.getText(ICON_SEARCH_INPUT);
                     String query = typed == null ? "" : typed.trim();
                     opener.runForPlayer(p, () -> {
-                        if (p.isOnline()) p.showDialog(iconPickerDialog(chest, query));
+                        if (p.isOnline()) p.showDialog(iconPickerDialog(chest, ctx, query));
                     });
                 })));
         // Default: clear the icon back to the ender-chest default.
         buttons.add(ActionButton.create(lang.getGui("dialog.icon-default"), lang.getGui("dialog.icon-default-desc"),
                 ICON_BUTTON_WIDTH, click((view, audience) -> {
                     if (!(audience instanceof Player p)) return;
-                    storageGateway.setIconAsync(p.getUniqueId(), index, null)
-                            .thenRun(() -> opener.openDetailDialog(p, index));
+                    storageGateway.setIconAsync(owner, index, null)
+                            .thenRun(() -> opener.openDetailDialog(p, ctx, index));
                 })));
 
         // One button per matching icon; the client scrolls the grid.
@@ -393,8 +409,8 @@ public final class ChestDialogs {
             buttons.add(ActionButton.create(label, null, ICON_BUTTON_WIDTH,
                     click((view, audience) -> {
                         if (!(audience instanceof Player p)) return;
-                        storageGateway.setIconAsync(p.getUniqueId(), index, entry.key())
-                                .thenRun(() -> opener.openDetailDialog(p, index));
+                        storageGateway.setIconAsync(owner, index, entry.key())
+                                .thenRun(() -> opener.openDetailDialog(p, ctx, index));
                     })));
         }
 
@@ -407,7 +423,7 @@ public final class ChestDialogs {
 
         ActionButton back = ActionButton.create(lang.getGui("dialog.back"), null, ICON_BUTTON_WIDTH,
                 click((view, audience) -> {
-                    if (audience instanceof Player p) opener.openDetailDialog(p, index);
+                    if (audience instanceof Player p) opener.openDetailDialog(p, ctx, index);
                 }));
 
         Component title = lang.getGui("dialog.icon-title");
@@ -428,9 +444,10 @@ public final class ChestDialogs {
         return icon.append(Component.text(" ")).append(label);
     }
 
-    /** Dedicated rename dialog: a single text input plus Save / Cancel. */
-    public Dialog renameDialog(ChestSummary chest) {
+    /** Dedicated rename dialog: a single text input plus Save / Cancel. Targets {@code ctx.owner()}. */
+    public Dialog renameDialog(ChestSummary chest, DetailContext ctx) {
         int index = chest.index();
+        UUID owner = ctx.owner();
         String current = chest.customName() != null ? chest.customName() : "";
 
         DialogInput nameInput = DialogInput.text("name", lang.getGui("dialog.name-label"))
@@ -443,13 +460,13 @@ public final class ChestDialogs {
                     if (!(audience instanceof Player p)) return;
                     String typed = view.getText("name");
                     String name = (typed == null || typed.isBlank()) ? null : typed.trim();
-                    storageGateway.renameAsync(p.getUniqueId(), index, name)
-                            .thenRun(() -> opener.openDetailDialog(p, index));
+                    storageGateway.renameAsync(owner, index, name)
+                            .thenRun(() -> opener.openDetailDialog(p, ctx, index));
                 }));
 
         ActionButton cancel = ActionButton.create(lang.getGui("dialog.cancel"), null, BUTTON_WIDTH,
                 click((view, audience) -> {
-                    if (audience instanceof Player p) opener.openDetailDialog(p, index);
+                    if (audience instanceof Player p) opener.openDetailDialog(p, ctx, index);
                 }));
 
         Component title = lang.getChestLabel(index, chest.customName(), chest.kind());
