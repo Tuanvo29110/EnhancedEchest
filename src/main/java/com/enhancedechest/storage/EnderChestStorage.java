@@ -7,6 +7,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -233,4 +234,11 @@ public interface EnderChestStorage {
      * that name has been recorded. Never blocks on the network — this reads only the plugin's own table.
      */
     @Nullable UUID findUuidByName(String name);
+
+    /**
+     * Returns every recorded (player_uuid, username) pair with a non-null username. Used once at
+     * startup to populate the in-memory {@code PlayerNameIndex} so offline-player tab-completion and
+     * resolution can answer from memory instead of hitting the DB on every keystroke.
+     */
+    Map<UUID, String> loadAllPlayerNames();
 }

@@ -11,7 +11,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -173,6 +175,9 @@ public abstract class AbstractSqlStorage implements EnderChestStorage {
 
     private static final String SQL_NAME_FIND =
             "SELECT player_uuid FROM players WHERE LOWER(username) = ? LIMIT 1";
+
+    private static final String SQL_NAME_LOAD_ALL =
+            "SELECT player_uuid, username FROM players WHERE username IS NOT NULL";
 
     protected final HikariDataSource dataSource;
 
@@ -889,6 +894,21 @@ public abstract class AbstractSqlStorage implements EnderChestStorage {
             }
         } catch (SQLException e) {
             throw new RuntimeException("Failed to resolve UUID for name " + name, e);
+        }
+    }
+
+    @Override
+    public Map<UUID, String> loadAllPlayerNames() {
+        Map<UUID, String> names = new HashMap<>();
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(SQL_NAME_LOAD_ALL);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                names.put(UUID.fromString(rs.getString(1)), rs.getString(2));
+            }
+            return names;
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to load player name index", e);
         }
     }
 

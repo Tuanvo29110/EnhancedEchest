@@ -107,6 +107,14 @@ public final class EnhancedEchestBootstrap implements PluginBootstrap {
      * been typed, offline players who have joined before are appended (filtered by the typed prefix and
      * capped at {@link #MAX_PLAYER_SUGGESTIONS}, so a large roster can't flood the client). The empty
      * state shows only online names, keeping it tidy — type to search the offline roster.
+     *
+     * <p>A third pass then checks the plugin's own {@link com.enhancedechest.service.PlayerNameIndex} —
+     * an in-memory, name-sorted index of every player the plugin has ever recorded a chest for. This is
+     * what makes players imported straight into the DB (e.g. via a migration tool) show up here: they
+     * were never actually online on this server, so they are absent from {@code Bukkit.getOfflinePlayers()}
+     * (which only reflects this server's own usercache/whitelist), but {@code /ee view} can still open
+     * their chest. The lookup is a {@code ConcurrentSkipListMap.subMap} range scan (O(log n + k)), so it
+     * stays cheap on every keystroke even with a large roster — no DB query on this hot path.
      */
     private static final SuggestionProvider<CommandSourceStack> KNOWN_PLAYERS = (ctx, builder) -> {
         suggestHeader(builder, "(player)");
@@ -132,22 +140,39 @@ public final class EnhancedEchestBootstrap implements PluginBootstrap {
                     if (++added >= MAX_PLAYER_SUGGESTIONS) break;
                 }
             }
+            if (added < MAX_PLAYER_SUGGESTIONS) {
+                EnhancedEchestPlugin plugin =
+                        (EnhancedEchestPlugin) Bukkit.getPluginManager().getPlugin("EnhancedEchest");
+                if (plugin != null && plugin.isEnabled()) {
+                    for (var entry : plugin.getPlayerNameIndex().prefixMatches(prefix, MAX_PLAYER_SUGGESTIONS - added)) {
+                        String lower = entry.displayName().toLowerCase(Locale.ROOT);
+                        if (seen.add(lower)) {
+                            builder.suggest(entry.displayName(), OFFLINE_PLAYER_TOOLTIP);
+                            if (++added >= MAX_PLAYER_SUGGESTIONS) break;
+                        }
+                    }
+                }
+            }
         }
         return builder.buildFuture();
     };
 
     /**
-     * Resolves a player name to a UUID from already-cached data only — online players, then the offline
-     * roster (`getOfflinePlayers`) — <b>without</b> the blocking {@code getOfflinePlayer(String)} web
-     * lookup, so it is safe to call on the suggestion hot path. Returns null if no cached player matches.
+     * Resolves a player name to a UUID from already-cached/in-memory data only — online players, then
+     * the server's offline roster (`getOfflinePlayers`), then the plugin's own {@link
+     * com.enhancedechest.service.PlayerNameIndex} — <b>without</b> the blocking {@code
+     * getOfflinePlayer(String)} web lookup, so it is safe to call on the suggestion hot path. The name
+     * index step is what lets this resolve players who were imported into the plugin's DB (e.g. via a
+     * migration) but have never actually connected to this server, so they never appear in Bukkit's own
+     * usercache-backed {@code getOfflinePlayers()}. Returns null if nothing matches.
      */
-    private static UUID knownPlayerUuid(String name) {
+    private static UUID knownPlayerUuid(String name, EnhancedEchestPlugin plugin) {
         Player online = Bukkit.getPlayerExact(name);
         if (online != null) return online.getUniqueId();
         for (OfflinePlayer p : Bukkit.getOfflinePlayers()) {
             if (name.equalsIgnoreCase(p.getName())) return p.getUniqueId();
         }
-        return null;
+        return plugin != null ? plugin.getPlayerNameIndex().findUuid(name) : null;
     }
 
     /**
@@ -249,7 +274,7 @@ public final class EnhancedEchestBootstrap implements PluginBootstrap {
         if (plugin == null || !plugin.isEnabled()) {
             return builder.buildFuture();
         }
-        UUID target = knownPlayerUuid(playerName);
+        UUID target = knownPlayerUuid(playerName, plugin);
         if (target == null) {
             return builder.buildFuture();
         }
@@ -288,7 +313,7 @@ public final class EnhancedEchestBootstrap implements PluginBootstrap {
         if (plugin == null || !plugin.isEnabled()) {
             return builder.buildFuture();
         }
-        UUID source = knownPlayerUuid(fromName);
+        UUID source = knownPlayerUuid(fromName, plugin);
         if (source == null) {
             return builder.buildFuture();
         }

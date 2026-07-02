@@ -16,23 +16,26 @@ import java.util.concurrent.ConcurrentHashMap;
  * to the DB (write-through), so the cache holds no dirty state and needs no shutdown flush. See the
  * leak-free invariant documented on {@link #preloadSettings}.
  *
- * <p>The name index is <b>not</b> touched here. It is written lazily by {@code ChestOpener}'s shared
- * open prelude — the first time a player actually opens their ender chest (or the list/right-click
- * equivalents) — reusing the settings row already loaded there, rather than unconditionally on join. See
- * {@link #setUsernameAsync}.
+ * <p>The DB name index is <b>not</b> written unconditionally here — {@link #setUsernameAsync} is called
+ * lazily by {@code ChestOpener}'s shared open prelude, the first time a player actually opens their
+ * ender chest (or the list/right-click equivalents), reusing the settings row already loaded there.
+ * That same call also updates the in-memory {@link PlayerNameIndex} so offline tab-completion sees the
+ * new name immediately, without waiting for a restart to reload it.
  */
 public final class PlayerSettingsCache {
 
     private final EnderChestStorage storage;
     private final DbExecutor db;
     private final Logger logger;
+    private final PlayerNameIndex nameIndex;
 
     private final ConcurrentHashMap<UUID, PlayerSettings> settingsCache = new ConcurrentHashMap<>();
 
-    public PlayerSettingsCache(EnderChestStorage storage, DbExecutor db, Logger logger) {
+    public PlayerSettingsCache(EnderChestStorage storage, DbExecutor db, Logger logger, PlayerNameIndex nameIndex) {
         this.storage = storage;
         this.db = db;
         this.logger = logger;
+        this.nameIndex = nameIndex;
     }
 
     /**
@@ -108,6 +111,7 @@ public final class PlayerSettingsCache {
      */
     public CompletableFuture<Void> setUsernameAsync(UUID owner, String username) {
         settingsCache.computeIfPresent(owner, (k, s) -> s.withUsername(username));
+        nameIndex.put(owner, username);
         return db.run(() -> storage.upsertPlayerName(owner, username))
                 .exceptionally(e -> {
                     logger.warn("Failed to record name for {}", owner, e.getCause() != null ? e.getCause() : e);

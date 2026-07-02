@@ -5,6 +5,7 @@ import com.enhancedechest.storage.EnderChestStorage;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -63,5 +64,10 @@ public final class StorageGateway {
     /** Resolves a stored in-game name to its UUID (case-insensitive), or completes with null on a miss. */
     public CompletableFuture<UUID> findUuidByNameAsync(String name) {
         return db.supply(() -> storage.findUuidByName(name));
+    }
+
+    /** Loads every recorded (uuid, username) pair once, to populate {@link PlayerNameIndex} at startup. */
+    public CompletableFuture<Map<UUID, String>> loadAllPlayerNamesAsync() {
+        return db.supply(storage::loadAllPlayerNames);
     }
 }

@@ -21,6 +21,7 @@ import com.enhancedechest.service.ChestSpillService;
 import com.enhancedechest.service.ChestTransferService;
 import com.enhancedechest.service.DbExecutor;
 import com.enhancedechest.service.PermissionChestService;
+import com.enhancedechest.service.PlayerNameIndex;
 import com.enhancedechest.service.PlayerSettingsCache;
 import com.enhancedechest.service.StorageGateway;
 import com.enhancedechest.storage.EnderChestStorage;
@@ -46,6 +47,7 @@ public final class EnhancedEchestPlugin extends JavaPlugin {
     private EnderChestStorage storage;
     private DbExecutor dbExecutor;
     private StorageGateway storageGateway;
+    private PlayerNameIndex playerNameIndex;
     private PlayerSettingsCache settingsCache;
     private ChestSessionManager sessionManager;
     private ChestSpillService spillService;
@@ -86,7 +88,9 @@ public final class EnhancedEchestPlugin extends JavaPlugin {
         // over it, then the dupe-safe session registry, then the item-moving and open-routing layers.
         dbExecutor     = new DbExecutor();
         storageGateway = new StorageGateway(storage, dbExecutor);
-        settingsCache  = new PlayerSettingsCache(storage, dbExecutor, getSLF4JLogger());
+        playerNameIndex = new PlayerNameIndex(storageGateway, getSLF4JLogger());
+        playerNameIndex.loadAll();
+        settingsCache  = new PlayerSettingsCache(storage, dbExecutor, getSLF4JLogger(), playerNameIndex);
         sessionManager = new ChestSessionManager(languageManager, codec, storage,
                 getSLF4JLogger(), foliaLib, dbExecutor);
         spillService   = new ChestSpillService(sessionManager, storage, codec, storageGateway,
