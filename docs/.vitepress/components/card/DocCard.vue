@@ -1,4 +1,5 @@
 <script setup>
+import { withBase } from 'vitepress'
 import LucideIcon from '../icon/LucideIcon.vue'
 
 defineProps({
@@ -10,7 +11,7 @@ defineProps({
 </script>
 
 <template>
-  <a :href="link" class="doc-card">
+  <a :href="withBase(link)" class="doc-card">
     <div v-if="icon" class="card-icon">
       <LucideIcon :name="icon" :size="20" />
     </div>

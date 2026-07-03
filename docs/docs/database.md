@@ -4,16 +4,16 @@ EnhancedEchest stores every ender chest's contents in a database. You choose the
 
 | Backend | `type` value | Best for |
 |---------|--------------|----------|
-| **SQLite** | `sqlite` | Single servers, zero setup, works out of the box |
-| **MySQL** | `mysql` | Networks sharing one database |
-| **MariaDB** | `mariadb` | Networks sharing one database |
-| **PostgreSQL** | `postgres` | Setups already running Postgres |
+| <img src="https://skillicons.dev/icons?i=sqlite" width="20" height="20" alt="SQLite" style="display:inline-block;vertical-align:middle;margin:0 4px 0 0" /> **SQLite** | `sqlite` | Single servers, zero setup, works out of the box |
+| <img src="https://skillicons.dev/icons?i=mysql" width="20" height="20" alt="MySQL" style="display:inline-block;vertical-align:middle;margin:0 4px 0 0" /> **MySQL** | `mysql` | Networks sharing one database |
+| <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;background:#242938;border-radius:6px;vertical-align:middle;margin:0 4px 0 0;box-sizing:border-box"><img src="https://cdn.simpleicons.org/mariadb/ffffff" width="14" height="14" alt="MariaDB" style="display:block" /></span> **MariaDB** | `mariadb` | Networks sharing one database |
+| <img src="https://skillicons.dev/icons?i=postgres" width="20" height="20" alt="PostgreSQL" style="display:inline-block;vertical-align:middle;margin:0 4px 0 0" /> **PostgreSQL** | `postgres` | Setups already running Postgres |
 
 ::: tip No extra installations needed
 All database drivers are bundled inside the plugin jar. You do not need to install anything on your server.
 :::
 
-## SQLite (default)
+## <img src="https://skillicons.dev/icons?i=sqlite" width="28" height="28" alt="SQLite" style="display:inline-block;vertical-align:middle;margin:0 6px 0 0" /> SQLite (default)
 
 SQLite requires no configuration. On first start the plugin creates the database file at `plugins/EnhancedEchest/enderchests.db`.
 
@@ -23,7 +23,7 @@ database:
   sqlite-file: enderchests.db
 ```
 
-## MySQL / MariaDB
+## <img src="https://skillicons.dev/icons?i=mysql" width="28" height="28" alt="MySQL" style="display:inline-block;vertical-align:middle;margin:0 6px 0 0" /><span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#242938;border-radius:8px;vertical-align:middle;margin:0 6px 0 0;box-sizing:border-box"><img src="https://cdn.simpleicons.org/mariadb/ffffff" width="20" height="20" alt="MariaDB" style="display:block" /></span> MySQL / MariaDB
 
 Point the plugin at an existing MySQL or MariaDB database:
 
@@ -41,7 +41,7 @@ database:
 - Create the database (schema) beforehand, for example `CREATE DATABASE enhancedechest;`
 - The plugin creates and manages its own tables automatically
 
-## PostgreSQL
+## <img src="https://skillicons.dev/icons?i=postgres" width="28" height="28" alt="PostgreSQL" style="display:inline-block;vertical-align:middle;margin:0 6px 0 0" /> PostgreSQL
 
 ```yaml
 database:

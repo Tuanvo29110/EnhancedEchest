@@ -37,5 +37,5 @@ desktop.ini
 plugins/
 run/
 
-# Local-only notes / credentials for dev infra (never commit)
+# Local-only notes
 local-docs/
