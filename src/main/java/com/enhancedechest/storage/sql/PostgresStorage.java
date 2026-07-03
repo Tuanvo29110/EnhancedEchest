@@ -43,6 +43,8 @@ public final class PostgresStorage extends AbstractSqlStorage {
 
     private static HikariConfig buildConfig(PluginConfig config) {
         HikariConfig hc = new HikariConfig();
+        // See MysqlStorage.buildConfig for why this is required under Paper's plugin classloader.
+        hc.setDriverClassName("com.enhancedechest.libs.postgresql.Driver");
         hc.setJdbcUrl("jdbc:postgresql://" + config.getDbHost() + ":" + config.getDbPort()
                 + "/" + config.getDbName());
         hc.setUsername(config.getDbUsername());

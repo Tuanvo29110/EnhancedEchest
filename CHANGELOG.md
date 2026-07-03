@@ -2,6 +2,12 @@
 
 All notable changes to EnhancedEchest are recorded here, newest first.
 
+## 1.0.5 - 2026-07-03
+
+### Fixed
+
+- Fixed an error that could prevent the plugin from starting when `database.type` is set to `mysql`, `mariadb`, or `postgres`, failing with `No suitable driver` even with a correct `host`, `port`, `database`, `username`, and `password`.
+
 ## 1.0.4 - 2026-07-02
 
 This release lets you set a player's base ender chest size by rank, makes `/ee view` reliable for offline players, and adds an automatic, versioned database upgrader.

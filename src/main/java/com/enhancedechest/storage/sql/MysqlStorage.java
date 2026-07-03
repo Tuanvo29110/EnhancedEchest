@@ -47,6 +47,12 @@ public final class MysqlStorage extends AbstractSqlStorage {
 
         // MariaDB Connector/J is compatible with both MySQL 5.7+ and 8.x.
         // It is shaded into the plugin jar, so no server-side driver is needed.
+        // Driver class name is set explicitly: the relocated driver's JDBC 4 ServiceLoader
+        // registration (META-INF/services/java.sql.Driver) isn't discovered by DriverManager
+        // under Paper's plugin classloader (ServiceLoader uses the thread's context classloader,
+        // which isn't the plugin's at enable time), so without this Hikari fails with
+        // "No suitable driver" even though the driver class is present in the jar.
+        hc.setDriverClassName("com.enhancedechest.libs.mariadb.Driver");
         hc.setJdbcUrl("jdbc:mariadb://" + config.getDbHost() + ":" + config.getDbPort()
                 + "/" + config.getDbName()
                 + "?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=utf8");
