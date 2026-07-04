@@ -4,7 +4,7 @@
 
 # EnhancedEchest
 
-A Paper plugin that replaces the vanilla ender chest with a larger, multi-chest, database-backed storage system.
+Give players bigger ender chest up to 54 slots, customizable and with support for multiple chests per player
 
 [![Modrinth](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact/available/modrinth_vector.svg)](https://modrinth.com/plugin/enhancedechest)
 [![Spigot](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact/available/spigot_vector.svg)](https://www.spigotmc.org/resources/enhancedechest-double-echest-plugin-%E2%9C%A8-26-1-2-26-2-%EF%B8%8F.136442/)
