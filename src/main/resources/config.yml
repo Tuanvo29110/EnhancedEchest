@@ -26,6 +26,21 @@ enderchest:
     # Smallest gap between two sorts by the same player, so the Sort button can't be spammed (each sort
     # re-reads and re-writes the chest). Time format: 20s, 5m, 1h, ... Set to 0s to disable the cooldown.
     sort-cooldown: 10s
+    # Words players may not use in a chest's custom name (via the Rename button). Matching is
+    # case-insensitive and by substring, so "admin" also blocks "iAmAdmin" and "ADMIN". A rename
+    # containing any listed word is rejected and the player is asked to choose another. Leave the list
+    # empty to allow any name. Clearing a name (saving it blank) is always allowed.
+    rename-blacklist:
+      - server
+      - admin
+      - staff
+      - owner
+    # Let players colour their chest names. When on, names accept legacy '&' colour codes, '&#RRGGBB'
+    # hex, and cosmetic MiniMessage tags (<red>, <gradient>, <rainbow>, <bold>, ...). Interactive tags
+    # (<click>, <hover>, <insertion>, ...) are ALWAYS stripped, so a name can never run a command or
+    # forge a tooltip. When off, names are shown exactly as typed (colour codes appear as plain text).
+    # The blacklist above is checked against the visible text, so colour codes can't hide a banned word.
+    rename-colors: true
 
 permission-chests:
   # Grant ender chests from permissions of the form:

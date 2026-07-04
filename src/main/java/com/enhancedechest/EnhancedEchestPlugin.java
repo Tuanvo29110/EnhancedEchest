@@ -84,7 +84,7 @@ public final class EnhancedEchestPlugin extends JavaPlugin {
             return;
         }
 
-        languageManager = new LanguageManager(this, pluginConfig.getLocale());
+        languageManager = new LanguageManager(this, pluginConfig, pluginConfig.getLocale());
 
         // Service layer, wired bottom-up: the shared async pool, then the storage/settings wrappers
         // over it, then the dupe-safe session registry, then the item-moving and open-routing layers.

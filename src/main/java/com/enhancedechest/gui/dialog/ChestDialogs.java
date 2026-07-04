@@ -478,6 +478,16 @@ public final class ChestDialogs {
                     if (!(audience instanceof Player p)) return;
                     String typed = view.getText("name");
                     String name = (typed == null || typed.isBlank()) ? null : typed.trim();
+                    // Reject names containing a configured banned word (case-insensitive substring),
+                    // matched against the formatting-stripped text so colour codes can't smuggle a banned
+                    // word through. The rejected name is never stored; re-show the dialog so they can retry.
+                    if (name != null && config.isNameBlocked(lang.plainChestName(name))) {
+                        p.sendMessage(lang.get("chest.rename-blocked"));
+                        opener.runForPlayer(p, () -> {
+                            if (p.isOnline()) p.showDialog(renameDialog(chest, ctx));
+                        });
+                        return;
+                    }
                     storageGateway.renameAsync(owner, index, name)
                             .thenRun(() -> opener.openDetailDialog(p, ctx, index));
                 }));

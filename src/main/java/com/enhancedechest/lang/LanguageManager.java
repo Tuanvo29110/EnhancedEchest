@@ -1,11 +1,15 @@
 package com.enhancedechest.lang;
 
 import com.enhancedechest.config.ConfigMigrations;
+import com.enhancedechest.config.PluginConfig;
 import com.enhancedechest.config.YamlMigrator;
 import com.enhancedechest.model.ChestKind;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import net.kyori.adventure.text.minimessage.tag.standard.StandardTags;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -25,7 +29,28 @@ public final class LanguageManager {
             .hexColors()
             .build();
 
+    /**
+     * MiniMessage instance for <b>player-supplied</b> chest names. Unlike {@link #MINI} (used for trusted
+     * language files) it resolves only cosmetic tags — colours, hex, gradients, rainbows and text
+     * decorations — and deliberately omits the interactive ones ({@code <click>}, {@code <hover>},
+     * {@code <insertion>}, {@code <selector>}, {@code <font>}, …). An unknown/omitted tag is left as
+     * literal text (non-strict), so a name can never carry a runnable command or a fake hover, which would
+     * otherwise be an exploit vector when an operator sees the name.
+     */
+    private static final MiniMessage NAME_MINI = MiniMessage.builder()
+            .tags(TagResolver.builder()
+                    .resolver(StandardTags.color())
+                    .resolver(StandardTags.rainbow())
+                    .resolver(StandardTags.gradient())
+                    .resolver(StandardTags.decorations())
+                    .resolver(StandardTags.reset())
+                    .build())
+            .build();
+
+    private static final PlainTextComponentSerializer PLAIN = PlainTextComponentSerializer.plainText();
+
     private final JavaPlugin plugin;
+    private final PluginConfig config;
     private String locale;
     private FileConfiguration messages;
     private FileConfiguration gui;
@@ -45,8 +70,9 @@ public final class LanguageManager {
     private final Map<String, Component> messageCache = new ConcurrentHashMap<>();
     private final Map<String, Component> guiCache = new ConcurrentHashMap<>();
 
-    public LanguageManager(JavaPlugin plugin, String locale) {
+    public LanguageManager(JavaPlugin plugin, PluginConfig config, String locale) {
         this.plugin = plugin;
+        this.config = config;
         this.locale = locale;
         load();
     }
@@ -142,12 +168,39 @@ public final class LanguageManager {
      */
     public Component getChestTitle(int index, @org.jetbrains.annotations.Nullable String customName) {
         if (customName != null && !customName.isBlank()) {
-            return Component.text(customName);
+            return chestName(customName);
         }
         if (index <= 1) {
             return parse(cachedTitleBase);
         }
         return parse(cachedTitleTemplate.replace("{index}", Integer.toString(index)));
+    }
+
+    /**
+     * Renders a player-supplied chest name to a display {@link Component}. When
+     * {@code enderchest.features.rename-colors} is on, colour/hex/gradient formatting is applied —
+     * MiniMessage when the name contains {@code <} (via the restricted {@link #NAME_MINI}, so no
+     * interactive tags), otherwise legacy {@code &}/{@code &#RRGGBB} codes. When off, the name is shown
+     * verbatim. Any parse error falls back to plain text, so a malformed name is never fatal.
+     */
+    public Component chestName(String name) {
+        if (config == null || !config.isRenameColorsEnabled()) {
+            return Component.text(name);
+        }
+        try {
+            return name.contains("<") ? NAME_MINI.deserialize(name) : LEGACY.deserialize(name);
+        } catch (RuntimeException e) {
+            return Component.text(name);
+        }
+    }
+
+    /**
+     * The plain, formatting-stripped text a chest name would <i>display</i> as — used to match against the
+     * rename blacklist so colour codes or MiniMessage tags can't be used to smuggle a banned word past the
+     * filter (e.g. {@code ad<red>min} or {@code ad&cmin}).
+     */
+    public String plainChestName(String name) {
+        return PLAIN.serialize(chestName(name));
     }
 
     /**

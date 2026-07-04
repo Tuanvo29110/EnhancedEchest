@@ -71,7 +71,7 @@ Với nhiều rương, người chơi có thể chọn một rương làm <stron
 <FeatureCard icon="Palette" title="Tùy Chỉnh Từng Rương">
 Người chơi cá nhân hóa rương ngay từ menu trong game, không cần lệnh. Mở màn hình quản lý của một rương để:
 
-- <strong>Đổi tên</strong>: rương đã đặt tên sẽ hiển thị tên đó làm tiêu đề kho đồ
+- <strong>Đổi tên</strong>: rương đã đặt tên sẽ hiển thị tên đó làm tiêu đề kho đồ. Khi bật <code>enderchest.features.rename-colors</code> (mặc định), người chơi có thể tô màu tên bằng mã <code>&amp;</code>, hex <code>&amp;#RRGGBB</code>, và các thẻ <a href="https://docs.advntr.dev/minimessage/format.html" target="_blank">MiniMessage</a> trang trí (<code>&lt;gradient&gt;</code>, <code>&lt;rainbow&gt;</code>, …). Các thẻ tương tác như <code>&lt;click&gt;</code> và <code>&lt;hover&gt;</code> luôn bị loại bỏ, nên tên không bao giờ chạy được lệnh. Bạn cũng có thể cấm một số từ nhất định bằng <code>enderchest.features.rename-blacklist</code>
 - <strong>Chọn biểu tượng</strong>: chọn bất kỳ vật phẩm nào đại diện cho rương trong danh sách, với bộ chọn có tìm kiếm, hoặc đặt lại về biểu tượng rương Ender mặc định
 - <strong>Sắp xếp</strong>: dọn rương chỉ với một cú bấm. Các vật phẩm giống nhau được gộp thành cụm đầy và sắp xếp lại theo loại vật phẩm (tắt theo mặc định; bật ở <code>enderchest.features.sort</code>)
 

@@ -52,6 +52,14 @@ Whether players may auto-sort a chest from the <strong>Edit mode</strong> menu. 
 Smallest gap between two sorts by the same player, so the <strong>Sort</strong> button can't be spammed (each sort re-reads and re-writes the chest). Time format: <code>20s</code>, <code>5m</code>, <code>1h</code>, … Set to <code>0s</code> to remove the cooldown. Only used when <code>features.sort</code> is on.
 </ConfigProperty>
 
+<ConfigProperty name="features.rename-blacklist" :value="['server', 'admin', 'staff', 'owner']" type="list">
+Words players may not use in a chest's custom name. Matching is <strong>case-insensitive</strong> and by <strong>substring</strong>, so <code>admin</code> also blocks <code>iAmAdmin</code> and <code>ADMIN</code>. A rename containing any listed word is rejected before it is saved and the player is asked to choose another. The check runs against the <em>visible</em> text, so colour codes can't be used to hide a banned word. Leave the list empty to allow any name; clearing a chest's name (saving it blank) is always allowed.
+</ConfigProperty>
+
+<ConfigProperty name="features.rename-colors" value="true" type="boolean">
+Whether players may colour their chest names. When <code>true</code>, names accept legacy <code>&amp;</code> colour codes, <code>&amp;#RRGGBB</code> hex, and cosmetic <a href="https://docs.advntr.dev/minimessage/format.html" target="_blank">MiniMessage</a> tags such as <code>&lt;red&gt;</code>, <code>&lt;gradient&gt;</code>, <code>&lt;rainbow&gt;</code>, and <code>&lt;bold&gt;</code>. Interactive tags (<code>&lt;click&gt;</code>, <code>&lt;hover&gt;</code>, <code>&lt;insertion&gt;</code>, …) are <strong>always stripped</strong>, so a name can never run a command or forge a tooltip. When <code>false</code>, names are shown exactly as typed and any codes appear as plain text. Global switch.
+</ConfigProperty>
+
 </ConfigGroup>
 
 <ConfigGroup name="permission-chests">
@@ -164,6 +172,12 @@ enderchest:
     icon: true
     sort: false
     sort-cooldown: 10s
+    rename-blacklist:
+      - server
+      - admin
+      - staff
+      - owner
+    rename-colors: true
 
 permission-chests:
   enabled: true

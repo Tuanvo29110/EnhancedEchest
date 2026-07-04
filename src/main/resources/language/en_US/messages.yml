@@ -23,6 +23,8 @@ chest:
   sorted: '{prefix}&fChest sorted.'
   # Shown when Sort is clicked again before its cooldown elapses. {time} = remaining time, e.g. "2s".
   sort-cooldown: '{prefix}&fPlease wait {time} before sorting again.'
+  # Shown when a rename is rejected because the name contains a word from enderchest.features.rename-blacklist.
+  rename-blocked: '{prefix}&cThat name is not allowed. Please choose a different one.'
 
 migrate:
   no-players: '{prefix}&fNo players are online.'

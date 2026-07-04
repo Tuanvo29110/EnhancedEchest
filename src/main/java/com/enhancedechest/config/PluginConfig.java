@@ -7,6 +7,9 @@ import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
 
+import java.util.List;
+import java.util.Locale;
+
 @Getter
 public final class PluginConfig {
 
@@ -23,6 +26,17 @@ public final class PluginConfig {
     private volatile boolean sortEnabled;
     /** Minimum gap between two sorts by the same player, to keep the Sort button from being spammed. */
     private volatile long sortCooldownMillis;
+    /**
+     * Disallowed words for custom chest names, stored lowercased. A typed name is rejected when its
+     * lowercased form contains any of these as a substring. Read live by the rename dialog, so volatile.
+     */
+    private volatile List<String> renameBlacklist;
+    /**
+     * Whether players may use colour/hex/gradient formatting in custom chest names ({@code &} codes,
+     * {@code &#RRGGBB} hex, and cosmetic MiniMessage tags). Interactive MiniMessage tags are always
+     * stripped regardless. Read live by the name renderer, so volatile.
+     */
+    private volatile boolean renameColorsEnabled;
 
     // Permission-granted chests (enhancedechest.additional_amount.<count>.slot.<size>)
     private boolean permissionChestsEnabled;
@@ -71,6 +85,11 @@ public final class PluginConfig {
         iconEnabled        = config.getBoolean("enderchest.features.icon", true);
         sortEnabled        = config.getBoolean("enderchest.features.sort", false);
         sortCooldownMillis = parseDuration(config.getString("enderchest.features.sort-cooldown", "10s"), "10s");
+        renameBlacklist    = config.getStringList("enderchest.features.rename-blacklist").stream()
+                .filter(s -> s != null && !s.isBlank())
+                .map(s -> s.toLowerCase(Locale.ROOT).trim())
+                .toList();
+        renameColorsEnabled = config.getBoolean("enderchest.features.rename-colors", true);
 
         permissionChestsEnabled = config.getBoolean("permission-chests.enabled", true);
 
@@ -122,6 +141,28 @@ public final class PluginConfig {
         } catch (IllegalArgumentException e) {
             return DurationFormat.parse(fallback);
         }
+    }
+
+    /**
+     * True when a proposed custom chest name is disallowed by {@code enderchest.features.rename-blacklist}.
+     * Matching is case-insensitive substring: a name is blocked if its lowercased form contains any
+     * configured word. A null/blank name (clearing the name) is always allowed.
+     */
+    public boolean isNameBlocked(String name) {
+        if (name == null || name.isBlank()) {
+            return false;
+        }
+        List<String> blacklist = renameBlacklist;
+        if (blacklist.isEmpty()) {
+            return false;
+        }
+        String lower = name.toLowerCase(Locale.ROOT);
+        for (String banned : blacklist) {
+            if (lower.contains(banned)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** True if size is a positive multiple of 9 and at most 54. */

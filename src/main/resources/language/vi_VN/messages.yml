@@ -23,6 +23,8 @@ chest:
   sorted: '{prefix}&fĐã sắp xếp rương.'
   # Hiện khi bấm Sắp xếp lại trước khi hết thời gian chờ. {time} = thời gian còn lại, ví dụ "2s".
   sort-cooldown: '{prefix}&fVui lòng đợi {time} trước khi sắp xếp lại.'
+  # Hiện khi đổi tên bị từ chối vì tên chứa từ trong enderchest.features.rename-blacklist.
+  rename-blocked: '{prefix}&cTên này không được phép. Vui lòng chọn tên khác.'
 
 migrate:
   no-players: '{prefix}&fKhông có người chơi nào trực tuyến.'

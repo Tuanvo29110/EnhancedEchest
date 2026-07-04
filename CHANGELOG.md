@@ -8,6 +8,14 @@ This release adds a built-in tool to move all your data from one database backen
 
 ### Added
 
+- Added coloured chest names: players can now format a chest's custom name with `&` colour codes, `&#RRGGBB` hex, and cosmetic MiniMessage tags such as `<red>`, `<gradient>`, and `<rainbow>`.
+  - Interactive MiniMessage tags (`<click>`, `<hover>`, `<insertion>`, …) are always stripped, so a name can never run a command or forge a tooltip.
+  - Controlled by the new `enderchest.features.rename-colors` toggle (on by default); turn it off to show names exactly as typed.
+- Added a name blacklist for chest renaming: set `enderchest.features.rename-blacklist` in `config.yml` to a list of words players may not use in a chest's custom name (for example `server`, `admin`, `staff`, `owner`).
+  - Matching is case-insensitive and by substring, so a banned word like `admin` also blocks names such as `iAmAdmin` or `ADMIN`.
+  - The check runs against the visible text, so colour codes can't be used to hide a banned word.
+  - A rename containing a banned word is rejected before it is saved, and the player is asked to choose a different name.
+  - Leave the list empty to allow any name; clearing a chest's name is always allowed.
 - Added `/ee import` to copy every player's chests from an old database backend into the one your server is currently using, for example when moving from SQLite to MySQL, or between MySQL and PostgreSQL.
   - Point `config.yml` at the new (empty) backend, restart, then run `/ee import` and fill in the old database's connection details in the dialog.
   - The copy is byte-for-byte, so item contents, sizes, names, icons, and settings all carry over exactly, and it stays fast even for large databases.
@@ -17,6 +25,7 @@ This release adds a built-in tool to move all your data from one database backen
 
 ### Fixed
 
+- Fixed `/ee migrate` appearing in tab-completion for players without the `enhancedechest.admin.migrate` permission. The command still could not be run, but it should not have been suggested; the whole `/ee migrate` subtree is now hidden unless the player has the permission.
 - Fixed a rare case where migrating a player's vanilla ender chest (on join with `migration.enabled`, or via `/ee migrate vanilla`) while that player had their ender chest open could lose the migrated items. An ender chest opened during a migration now simply waits for it and then shows the migrated items.
 - Fixed vanilla migration replacing whatever was already stored in chest #1: it now merges the vanilla items into free slots, anything that does not fit is moved to a recoverable temporary chest (the chest is never resized), and running the migration twice can no longer duplicate or drop anything.
 

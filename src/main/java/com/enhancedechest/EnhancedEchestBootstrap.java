@@ -376,9 +376,12 @@ public final class EnhancedEchestBootstrap implements PluginBootstrap {
         commands.register(
                 Commands.literal("enhancedechest")
                         .then(Commands.literal("migrate")
+                                // All three migration sources share one permission node; gate the whole
+                                // subtree on the "migrate" literal itself (not just its children) so
+                                // /ee migrate never shows up in tab-completion for players without it.
+                                .requires(src -> src.getSender().hasPermission(ADMIN_MIGRATE_PERMISSION))
                                 // /ee migrate vanilla [all|<player>] — import vanilla ender chests
                                 .then(Commands.literal("vanilla")
-                                        .requires(src -> src.getSender().hasPermission(ADMIN_MIGRATE_PERMISSION))
                                         .then(Commands.literal("all")
                                                 .executes(ctx -> MigrateVanillaCommand.executeAll(ctx.getSource())))
                                         .then(Commands.argument("player", StringArgumentType.word())
@@ -388,7 +391,6 @@ public final class EnhancedEchestBootstrap implements PluginBootstrap {
                                                         StringArgumentType.getString(ctx, "player")))))
                                 // /ee migrate axvaults [all|<player>] — import vaults from AxVaults
                                 .then(Commands.literal("axvaults")
-                                        .requires(src -> src.getSender().hasPermission(ADMIN_MIGRATE_PERMISSION))
                                         .executes(ctx -> MigrateAxVaultsCommand.executeAll(ctx.getSource()))
                                         .then(Commands.literal("all")
                                                 .executes(ctx -> MigrateAxVaultsCommand.executeAll(ctx.getSource())))
@@ -399,7 +401,6 @@ public final class EnhancedEchestBootstrap implements PluginBootstrap {
                                                         StringArgumentType.getString(ctx, "player")))))
                                 // /ee migrate playervaultsx [all|<player>] — import vaults from PlayerVaultsX
                                 .then(Commands.literal("playervaultsx")
-                                        .requires(src -> src.getSender().hasPermission(ADMIN_MIGRATE_PERMISSION))
                                         .executes(ctx -> MigratePlayerVaultsXCommand.executeAll(ctx.getSource()))
                                         .then(Commands.literal("all")
                                                 .executes(ctx -> MigratePlayerVaultsXCommand.executeAll(ctx.getSource())))
